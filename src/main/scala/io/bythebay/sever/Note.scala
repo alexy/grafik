@@ -80,7 +80,13 @@ object N {
 
 object Main {
 
-  val developerToken = "<mytoken>"
+  val env = "prod" // "dev" or "prod"
+
+  val developerToken = scala.io.Source.fromFile("devtoken.txt").getLines()
+    .map(_.split(" ")).toList
+    .foldLeft(Map[String,String]()){ case (m, a) => m + (a(0) -> a(1)) }(env)
+
+  println("devtoken: " + developerToken)
 
   def main(args: Array[String]): Unit = {
 
