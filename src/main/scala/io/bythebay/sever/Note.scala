@@ -13,19 +13,7 @@ import com.evernote.edam.`type`.{Note, Notebook}
 import com.evernote.edam.error.{EDAMNotFoundException, EDAMUserException}
 
 
-object Util {
-  def so(s: String): Option[String] = Option(s).filter(_.trim.nonEmpty)
-  def well(so: Option[String]): String = so.getOrElse("")
-  def hasPrefix(p: Char)(s: String): String = if(s(0) == p) s else p +: s
-  def fieldOr[T](e: T)(f: String => T)(l: List[String])(n: Int): T =
-    try { f(l(n)) } catch { case _: IndexOutOfBoundsException => e }
 
-//  def fieldOrEmpty1(l: List[String])(n: Int): String         = fieldOr("")(identity[String])(_)(_)
-//  def fieldOrNone1(l: List[String])(n: Int):  Option[String] = fieldOr(None: Option[String])((x:String) => Option(x))
-  def fieldOrEmpty(l: List[String])(n: Int):  String         = try { l(n) }     catch { case _: IndexOutOfBoundsException => "" }
-  def fieldOrNone(l: List[String])(n: Int):   Option[String] = try { so(l(n)) } catch { case _: IndexOutOfBoundsException => None}
-}
-import Util._
 
 case class TalkTitle(number: Int, speakerName: String, group: Int = 0) {
   override def toString = (number + group*100).toString + ": " + speakerName
@@ -82,13 +70,13 @@ object Main {
 
   val env = "prod" // "dev" or "prod"
 
-  val developerToken = scala.io.Source.fromFile("devtoken.txt").getLines()
-    .map(_.split(" ")).toList
-    .foldLeft(Map[String,String]()){ case (m, a) => m + (a(0) -> a(1)) }(env)
+  val developerToken: String = readStringMapFromTSV("devtoken.tsv")(env)
 
   println("devtoken: " + developerToken)
 
   def main(args: Array[String]): Unit = {
+
+    val talks = Talk.readFromTSV(args(0))
 
     val group = if (args.size > 1) 1 else 0
 
@@ -102,44 +90,19 @@ object Main {
 
     notebooks foreach { case nb => println("Notebook: " + nb.getName)}
 
-    val title = TalkTitle(1, "Abram Katz")
-    val body = TalkBody(email = "a@b.com", company = Some("Verizon"), twitter = Some("@abrasha"),
-      title = "How do you do it?", body = "Sometimes, we just have no idea.", bio = "He was born in a workers part of town")
+    talks foreach { case talk =>
+//      val title = TalkTitle(1, "John Smith")
+//      val body = TalkBody(email = "a@b.com", company = Some("Verizon"), twitter = Some("@jsmith"),
+//        title = "How do you do it?", body = "Sometimes, we just have no idea.", bio = "He was born in a tough part of town")
 
+      val title = TalkTitle(talk.id+2, talk.name, group)
+      val body = TalkBody(email=talk.email,
+        twitter=talk.twitterOpt, company=talk.companyOpt,
+        title=talk.title, body=talk.body, bio=talk.bio)
 
-    scala.io.Source.fromFile(args(0)).getLines().toList match {
-      case schemaRow :: lines =>
-
-        val schema: Map[String, Int] = schemaRow.split("\t").zipWithIndex.toMap
-
-        try {
-          val namePos       = schema("Name")
-          val emailPos      = schema("Email Address")
-          val optCompanyPos = schema.get ("Company and role") // optional in key, value, field
-          val optTwitterPos = schema("Speaker's Twitter handle")
-          val titlePos      = schema("Title")
-          val bodyPos       = schema("Abstract")
-          val bioPos        = schema("Speaker Bio")
-
-          lines.zipWithIndex foreach { case (line, i) =>
-            val fields: List[String] = line.split("\t").toList.map(xml.Utility.escape)
-            val f: Int => String = fieldOrEmpty(fields)
-            val fo: Int => Option[String] = fieldOrNone(fields)
-
-            val title = TalkTitle(i + 2, f(namePos), group)
-            val body = TalkBody(f(emailPos), optCompanyPos.map(f(_)), fo(optTwitterPos), f(titlePos), f(bodyPos), f(bioPos))
-
-            println("title: " + title)
-            println("body:  " + body)
-            N.makeNote(noteStore, title.toString, body.toString)
-          }
-      } catch {
-          case e: NoSuchElementException =>
-            println("missing field: " + e)
-        }
-
-      case _ => println("there seems to be not enough data in your table!")
+      println("title: " + title)
+      println("body:  " + body)
+      //N.makeNote(noteStore, title.toString, body.toString)
     }
-
   }
 }

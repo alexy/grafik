@@ -10,6 +10,8 @@ libraryDependencies ++= Seq(
     , "io.megam" %% "newman" % "1.3.8"
     , "net.databinder.dispatch" %% "dispatch-core" % "0.11.2"
     , "com.twitter" %% "finagle-http" % "6.25.0"
+    , "org.apache.poi" % "poi" % "3.12"
+    , "org.apache.poi" % "poi-ooxml" % "3.12"
     //, "org.parboiled" %% "parboiled" % "2.1.0"
     //, "com.github.tototoshi" %% "scala-csv" % "1.2.1"
     , "org.scalatest" %% "scalatest" % "2.2.2" % "test"
