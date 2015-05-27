@@ -11,9 +11,10 @@ import org.apache.poi.xssf.usermodel._
  */
 object Excel {
   def main(args: Array[String]): Unit = {
+    val days = Array("2015-08-14", "2015-08-15")
     val timetableFile = "timetable.tsv"
-
-//    val timetable =readStringMapFromTSV(timetableFile)
+    println(s"reading timetable from $timetableFile")
+    val timetable: Map[Char,String] = readStringMapFromTSV(timetableFile) map { case (k,v) => (k(0),v) }
 
     val talksFile     = args(0)
     val sessionsFile  = args(1)
@@ -21,9 +22,11 @@ object Excel {
 
     println(s"reading talks from $talksFile, sessions from $sessionsFile")
 
-    val talks = Talk.readFromTSV(talksFile)
+    val talks = Talk.readFromTSV(talksFile).filter(_.key.nonEmpty).sortBy(_.key)
 
-    println(s"read ${talks.size} talks")
+    println(s"read ${talks.size} keyed talks")
+
+//    sys.exit(0)
 
     val a0: Map[Char, Int] = ('a' to 'z').zipWithIndex.toMap
 
@@ -36,68 +39,72 @@ object Excel {
     val javaDateFormat = "yyyy-MM-dd HH:mm"
     val dateFormat = new java.text.SimpleDateFormat(javaDateFormat)
 
+    // date cell style 1
     val excelFormatPattern = DateFormatConverter.convert(Locale.US,javaDateFormat)
-
     val cellStyleDate1 = wb.createCellStyle()
     val poiFormat = wb.createDataFormat()
-    cellStyleDate1.setDataFormat(poiFormat.getFormat(excelFormatPattern))
+    cellStyleDate1.setDataFormat(
+      poiFormat.getFormat(excelFormatPattern))
 
+    // date cell style 2
     val createHelper = wb.getCreationHelper()
     val cellStyleDate2 = wb.createCellStyle()
     cellStyleDate2.setDataFormat(
       createHelper.createDataFormat().getFormat("m/d/yy h:mm"))
 
-    // Заполняем шапку таблицы
-    val row = sheet.getRow(9)
-    for(idx <- row.getFirstCellNum to row.getLastCellNum) {
-      val cell = row.getCell(idx)
-      val text = if ((3 to 4) contains idx) {
-        //cell.setCellStyle(cellStyle)
-        cell.getDateCellValue()
+//    // Заполняем шапку таблицы
+//    val row = sheet.getRow(9
+//    for(idx <- row.getFirstCellNum to row.getLastCellNum) {
+//      val cell = row.getCell(idx)
+//      val text = if ((3 to 4) contains idx) {
+//        //cell.setCellStyle(cellStyle)
+//        cell.getDateCellValue()
+//      }
+//      else
+//        cell
+//      println(idx + ": " + text)
+//    }
+
+    val rowBase = 8
+    talks.zipWithIndex foreach { case (talk, talkIndex) =>
+      val key = talk.key.get // here the key must be present past filter above
+      val talkKey = new TalkKey(key, timetable, days)
+
+      val r = sheet.createRow(rowBase+talkIndex)
+
+      val startFinish = talkKey.startFinish
+
+      // can create an implicit to set cells by letter directly
+
+      implicit class RichXSSFRow(r: XSSFRow) {
+        // overloading createCell would silently fall on Char's own implicit conversion to Int
+        // and all the cells will be created in 60-90s range...
+        def createCellA(c: Char): XSSFCell = {
+          val delta =
+            if (('a' to 'z') contains c) 'a'
+            else if (('A' to 'Z') contains c) 'A'
+            else throw new IllegalArgumentException(s"cannot address Excel cells by $c")
+          val cellNum = c - delta
+          r.createCell(cellNum)
+        }
       }
-      else
-        cell
-      println(idx + ": " + text)
+
+      // r.createCell(a0('a')).setCellValue(key)
+      r.createCellA('a').setCellValue(key)
+      r.createCellA('b').setCellValue(talk.title)
+      r.createCellA('c').setCellValue("Y")
+
+      startFinish.zipWithIndex foreach { case ((day,time), i) =>
+        val c = r.createCell(3 + i)
+        c.setCellValue(dateFormat.parse(s"$day $time"))
+        c.setCellStyle(cellStyleDate1)
+      }
+
+      r.createCellA('f').setCellValue(talkKey.track)
+      r.createCellA('i').setCellValue(talk.body)
+      r.createCellA('j').setCellValue(talk.author)
+      r.createCellA('p').setCellValue(talkKey.track)
     }
-
-
-    /*
-    0: 2
-    1: Keynote II: How important is choice of language to build a scalable platform?
-      2: Y
-    3: Fri Aug 14 09:40:00 PDT 2015
-    4: Fri Aug 14 10:10:00 PDT 2015
-    5:
-    6:
-    7:
-    8: We all know technology choices
-    9: Vidhya Narayanan
-    10:
-    11:
-    12:
-    13:
-    14:
-    15: TBA
-    */
-
-    val r  = sheet.createRow(12)
-    r.createCell(0).setCellValue("SEI5")
-    r.createCell(1).setCellValue("How to catch a Kangaroo")
-    r.createCell(2).setCellValue("Y")
-
-    val startEnd = List("10:10", "10:50")
-    val day = "2015-08-14"
-
-    startEnd.zipWithIndex foreach { case (time,i) =>
-      val c = r.createCell(3+i)
-      c.setCellValue(dateFormat.parse(s"$day $time"))
-      c.setCellStyle(cellStyleDate1)
-    }
-
-    r.createCell(a0('f')).setCellValue("Track A")
-    r.createCell(a0('i')).setCellValue("Catching Kangaroos is Hard but Rewarding")
-    r.createCell(a0('j')).setCellValue("John Smith")
-    r.createCell(a0('p')).setCellValue("Track A")
 
     val fileOut = new FileOutputStream("workbook.xlsx")
     wb.write(fileOut)

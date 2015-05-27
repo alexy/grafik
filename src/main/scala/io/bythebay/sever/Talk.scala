@@ -4,7 +4,8 @@ package io.bythebay.sever
  * Created by a on 5/26/15.
  */
 
-case class Talk(id: Int, name: String, email: String,
+case class Talk(key: Option[String], id: Int,
+                author: String, email: String,
                 companyOpt: Option[String],
                 twitterOpt: Option[String],
                 title: String,
@@ -21,6 +22,7 @@ object Talk {
         val schema: Map[String, Int] = schemaRow.split("\t").zipWithIndex.toMap
 
         try {
+          val key = schema("Key")
           val namePos = schema("Name")
           val emailPos = schema("Email Address")
           val optCompanyPos = schema.get("Company and role") // optional in key, value, field
@@ -39,7 +41,7 @@ object Talk {
 
               Some(
                 Talk(
-                  id = i, name = f(namePos), email = f(emailPos),
+                  key=fo(key), id = i, author = f(namePos), email = f(emailPos),
                   companyOpt = optCompany, twitterOpt = fo(optTwitterPos),
                   title = f(titlePos), body = f(bodyPos), bio = f(bioPos)
                 )

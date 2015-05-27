@@ -16,7 +16,7 @@ package object sever {
     def fieldOrEmpty1(l: List[String])(n: Int) = fieldOr("")(identity[String])(l)(n)
     def fieldOrNone1(l: List[String])(n: Int)  = fieldOr(None: Option[String])((x:String)=>so(x))(l)(n)
 
-    def readStringMapFromTSV(filename: String) = scala.io.Source.fromFile(filename).getLines()
-      .map(_.split(" ")).toList
+    def readStringMapFromTSV(filename: String, separator: String = "\t") = scala.io.Source.fromFile(filename).getLines()
+      .map(_.split(separator)).toList
       .foldLeft(Map[String, String]()) { case (m, a) => m + (a(0) -> a(1))}
 }
