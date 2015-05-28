@@ -11,20 +11,23 @@ import org.apache.poi.xssf.usermodel._
  */
 object Excel {
   def main(args: Array[String]): Unit = {
-    val days = Array("2015-08-14", "2015-08-15")
-    val timetableFile = "timetable.tsv"
-    println(s"reading timetable from $timetableFile")
-    val timetable: Map[Char,String] = readStringMapFromTSV(timetableFile) map { case (k,v) => (k(0),v) }
-
     val talksFile     = args(0)
-    val sessionsFile  = args(1)
+    val timetableFile = args(1)
+    val days = args.slice(2,4) // Array("2015-08-14", "2015-08-15")
+    println(s"reading timetable from $timetableFile, filling days ${days(0)}..${days(1)}")
+
+    val excelIn  = args(4)
+    // TODO the first empty row can determine automatically
+    val rowBase  = args(5).toInt // 8 for SBTB, 47 for BDS
+    val excelOut = args(6)
 //    val timetableFile = args(2)
 
-    println(s"reading talks from $talksFile, sessions from $sessionsFile")
+    println(s"reading talks from $talksFile, sessions from $excelIn, writing $excelOut")
 
     val talks = Talk.readFromTSV(talksFile).filter(_.key.nonEmpty).sortBy(_.key)
+    val timetable: Map[Char,String] = readStringMapFromTSV(timetableFile) map { case (k,v) => (k(0),v) }
 
-    println(s"read ${talks.size} keyed talks")
+    println(s"read ${talks.size} keyed talks, ${timetable.size} time slots in a day")
 
 //    sys.exit(0)
 
@@ -32,7 +35,7 @@ object Excel {
 
     val wb = new XSSFWorkbook(
 //      getClass.getResourceAsStream("/"+sessionsFile)
-      new FileInputStream(sessionsFile)
+      new FileInputStream(excelIn)
     )
     val sheet = wb.getSheetAt(0)
 
@@ -65,7 +68,6 @@ object Excel {
 //      println(idx + ": " + text)
 //    }
 
-    val rowBase = 8
     talks.zipWithIndex foreach { case (talk, talkIndex) =>
       val key = talk.key.get // here the key must be present past filter above
       val talkKey = new TalkKey(key, timetable, days)
@@ -106,7 +108,7 @@ object Excel {
       r.createCellA('p').setCellValue(talkKey.track)
     }
 
-    val fileOut = new FileOutputStream("workbook.xlsx")
+    val fileOut = new FileOutputStream(excelOut)
     wb.write(fileOut)
     fileOut.close()
 
