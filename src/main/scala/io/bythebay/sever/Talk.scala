@@ -5,12 +5,9 @@ package io.bythebay.sever
  */
 
 case class Talk(key: Option[String], id: Int,
-                author: String, email: String,
-                companyOpt: Option[String],
-                twitterOpt: Option[String],
                 title: String,
                 body: String,
-                bio: String)
+                speaker: Speaker)
 
 
 object Talk {
@@ -25,11 +22,20 @@ object Talk {
           val key = schema("Key")
           val namePos = schema("Name")
           val emailPos = schema("Email Address")
-          val optCompanyPos = schema.get("Company and role") // optional in key, value, field
+
+          def tryKeys[K,V](m: Map[K,V])(keys: List[K]): Option[V] = keys match {
+            case key :: rest => m.get(key) match {
+              case res @ Some(_) => res
+              case _ => tryKeys(m)(rest)
+            }
+            case _ => None
+          }
+          val optCompanyPos = tryKeys(schema)(List("Company and role", "Current company and role")) // optional in key, value, field
           val optTwitterPos = schema("Speaker's Twitter handle")
           val titlePos = schema("Title")
           val bodyPos = schema("Abstract")
           val bioPos = schema("Speaker Bio")
+          val optPhotoPos = schema("Speaker Photo")
 
           lines.zipWithIndex flatMap { case (line, i) =>
             try {
@@ -39,11 +45,15 @@ object Talk {
 
               val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
 
+              val speaker = Speaker(name = f(namePos), email = f(emailPos),
+                companyOpt = optCompany, twitterOpt = fo(optTwitterPos),
+                bio = f(bioPos), photoOpt = fo(optPhotoPos))
+
               Some(
                 Talk(
-                  key=fo(key), id = i, author = f(namePos), email = f(emailPos),
-                  companyOpt = optCompany, twitterOpt = fo(optTwitterPos),
-                  title = f(titlePos), body = f(bodyPos), bio = f(bioPos)
+                  key=fo(key), id = i,
+                  title = f(titlePos), body = f(bodyPos),
+                  speaker = speaker
                 )
               )
             } catch {

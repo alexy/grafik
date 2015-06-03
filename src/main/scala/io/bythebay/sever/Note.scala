@@ -95,10 +95,11 @@ object Main {
 //      val body = TalkBody(email = "a@b.com", company = Some("Verizon"), twitter = Some("@jsmith"),
 //        title = "How do you do it?", body = "Sometimes, we just have no idea.", bio = "He was born in a tough part of town")
 
-      val title = TalkTitle(talk.id+2, talk.author, group)
-      val body = TalkBody(email=talk.email,
-        twitter=talk.twitterOpt, company=talk.companyOpt,
-        title=talk.title, body=talk.body, bio=talk.bio)
+      val speaker = talk.speaker
+      val title = TalkTitle(talk.id+2, speaker.name, group)
+      val body = TalkBody(email=speaker.email,
+        twitter=speaker.twitterOpt, company=speaker.companyOpt,
+        title=talk.title, body=talk.body, bio=speaker.bio)
 
       println("title: " + title)
       println("body:  " + body)

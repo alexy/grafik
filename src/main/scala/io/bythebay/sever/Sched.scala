@@ -6,10 +6,12 @@ import org.apache.poi.hssf.usermodel.HSSFDateUtil
 import org.apache.poi.ss.util._
 import org.apache.poi.xssf.usermodel._
 
+import io.bythebay.excel.Implicits._
+
 /**
  * Created by a on 5/26/15.
  */
-object Excel {
+object Sched {
   def main(args: Array[String]): Unit = {
     val talksFile     = args(0)
     val timetableFile = args(1)
@@ -78,18 +80,6 @@ object Excel {
 
       // can create an implicit to set cells by letter directly
 
-      implicit class RichXSSFRow(r: XSSFRow) {
-        // overloading createCell would silently fall on Char's own implicit conversion to Int
-        // and all the cells will be created in 60-90s range...
-        def createCellA(c: Char): XSSFCell = {
-          val delta =
-            if (('a' to 'z') contains c) 'a'
-            else if (('A' to 'Z') contains c) 'A'
-            else throw new IllegalArgumentException(s"cannot address Excel cells by $c")
-          val cellNum = c - delta
-          r.createCell(cellNum)
-        }
-      }
 
       // r.createCell(a0('a')).setCellValue(key)
       r.createCellA('a').setCellValue(key)
@@ -104,7 +94,7 @@ object Excel {
 
       r.createCellA('f').setCellValue(talkKey.track)
       r.createCellA('i').setCellValue(talk.body)
-      r.createCellA('j').setCellValue(talk.author)
+      r.createCellA('j').setCellValue(talk.speaker.name)
       r.createCellA('p').setCellValue(talkKey.track)
     }
 
