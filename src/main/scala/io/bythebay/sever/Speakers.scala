@@ -33,7 +33,7 @@ object Speakers {
       val r = sheet.createRow(rowBase + speakerIndex)
       r.createCellA('a').setCellValue(speaker.name)
       r.createCellA('b').setCellValue(speaker.email)
-      r.createCellA('g').setCellValue(speaker.bio)
+      r.createCellA('g').setCellValue(speaker.bioOpt.getOrElse(""))
       speaker.twitterOpt foreach { handle =>
         r.createCellA('h').setCellValue("twitter.com/" + handle.substring(1, handle.size))
       }

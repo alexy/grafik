@@ -5,7 +5,21 @@ package io.bythebay.sever
  */
 
 case class Speaker(
-    name: String, email: String,
-    companyOpt: Option[String],
-    twitterOpt: Option[String],
-    bio: String, photoOpt: Option[String])
+    name:       String,
+    email:      String,
+    companyOpt: Option[String] = None,
+    roleOpt:    Option[String] = None,
+    twitterOpt: Option[String] = None,
+    bioOpt:     Option[String] = None,
+    photoOpt:   Option[String] = None) {
+
+  override def toString: String = {
+    List(
+      ("name", Some(name)),
+      ("email", Some(email)),
+      ("company", companyOpt),
+      ("role", roleOpt)
+    ).collect{ case (field, Some(text)) => s"$field:\t$text" }
+        .mkString("\n")
+  }
+}

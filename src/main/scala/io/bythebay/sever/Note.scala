@@ -99,7 +99,7 @@ object Main {
       val title = TalkTitle(talk.id+2, speaker.name, group)
       val body = TalkBody(email=speaker.email,
         twitter=speaker.twitterOpt, company=speaker.companyOpt,
-        title=talk.title, body=talk.body, bio=speaker.bio)
+        title=talk.title, body=talk.body, bio=speaker.bioOpt.getOrElse(""))
 
       println("title: " + title)
       println("body:  " + body)

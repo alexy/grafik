@@ -1,16 +1,84 @@
 package io.bythebay.sever
 
+import io.bythebay.util._
+
 /**
  * Created by a on 5/26/15.
  */
 
-case class Talk(key: Option[String], id: Int,
-                title: String,
-                body: String,
-                speaker: Speaker)
+case class Talk(key:     Option[String],
+                id:      Int,
+                tags:    List[String],
+                title:   String,
+                body:    String, // abstract is a keyword in Scala
+                speaker: Speaker) {
+  override def toString: String = List(
+    ("id",id),
+    ("title", title),
+    ("tags", tags.mkString(",")),
+    ("speaker", speaker.toString),
+    ("abstract", body)
+  ).map{case (field, text) => s"$field:\t$text"}
+    .mkString("\n")
+}
 
 
 object Talk {
+
+  val keys = Map(
+    "timestamp" -> "Timestamp",
+    "name" -> "Name",
+    "company" -> "Your Company",
+    "role" -> "Role",
+    "email" -> "Email address",
+    "tracks" -> "Which of the Six Conferences is this talk Suitable for?",
+    "title" -> "Talk Title",
+    "link1" -> "Talk Link 1",
+    "link2" -> "Talk Link 2",
+    "github" -> "Talk Github Repo",
+    "abstract" -> "Talk Abstract",
+    "code" -> "How much code will your talk have?",
+    "data" -> "How much data are you going to show?",
+    "datasets" -> "Talk Datasets",
+    "datasetsNotes" -> "Talk Datasets, Notes",
+    "length" -> "Talk Duration",
+    "notes" -> "Notes for the organizers",
+    "found" -> "How did you learn about Data By the Bay?",
+    "partner" -> "Would your company be a partner of Data By the Bay?"
+  )
+
+  val trackTagPrefix = ""
+  val trackTags = Map(
+    "Text By the Bay" -> "text",
+    "Democracy By the Bay" -> "democracy",
+    "AIoT By the Bay" -> "aiot",
+    "Life Sciences By the Bay" -> "life",
+    "Law By the Bay" -> "law",
+    "UX By the Bay" -> "ux",
+    "General Slot -- 2 hours on general data processing each day" -> "general"
+  )
+
+  val lengthTagPrefix = ""
+  val lengthTags = Map(
+    "40 minutes" -> "40",
+    "20 minutes" -> "20"
+  )
+
+  val dataTagPrefix = ""
+  val dataTags = Map(
+    "Working with public data sets, linked above" -> "linked",
+    "Showing proprietary data, lots of it" -> "proprietary",
+    "Showing lots of data summaries" -> "summaries",
+    "Generally alluding to \"data in the cloud\"" -> "cloud"
+  )
+
+  val codeTagPrefix = ""
+  val codeTags = Map(
+    "Live coding.  The best!" -> "live",
+    "Showing code in an IDE/on Github" -> "github",
+    "Code on slides" -> "slides",
+    "Making air curly braces with hand waves" -> "air"
+  )
 
   def readFromTSV(filename: String): List[Talk] = {
     scala.io.Source.fromFile(filename).getLines().toList match {
@@ -18,24 +86,28 @@ object Talk {
 
         val schema: Map[String, Int] = schemaRow.split("\t").zipWithIndex.toMap
 
-        try {
-          val key = schema("Key")
-          val namePos = schema("Name")
-          val emailPos = schema("Email Address")
+        def position(key: String): Int = schema(keys(key))
 
-          def tryKeys[K,V](m: Map[K,V])(keys: List[K]): Option[V] = keys match {
-            case key :: rest => m.get(key) match {
-              case res @ Some(_) => res
-              case _ => tryKeys(m)(rest)
-            }
-            case _ => None
-          }
-          val optCompanyPos = tryKeys(schema)(List("Company and role", "Current company and role")) // optional in key, value, field
-          val optTwitterPos = schema("Speaker's Twitter handle")
-          val titlePos = schema("Title")
-          val bodyPos = schema("Abstract")
-          val bioPos = schema("Speaker Bio")
-          val optPhotoPos = schema("Speaker Photo")
+        try {
+          //          val keyPos   = position("key")
+          val namePos = position("name")
+          val emailPos = position("email")
+
+          //          val optCompanyPos = tryKeys(schema)(List("Company and role", "Current company and role")) // optional in key, value, field
+          val companyPos = position("company")
+          val rolePos = position("role")
+
+          val titlePos = position("role")
+          val bodyPos = position("abstract")
+          val lengthPos = position("length")
+          //          val optTwitterPos = schema("Speaker's Twitter handle")
+          //          val bioPos = schema("Speaker Bio")
+          //          val optPhotoPos = schema("Speaker Photo")
+
+
+          val tracksPos = position("tracks")
+          val dataPos = position("data")
+          val codePos = position("code")
 
           lines.zipWithIndex flatMap { case (line, i) =>
             try {
@@ -43,16 +115,30 @@ object Talk {
               val f: Int => String = fieldOrEmpty1(fields)
               val fo: Int => Option[String] = fieldOrNone1(fields)
 
-              val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
+              //              val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
 
-              val speaker = Speaker(name = f(namePos), email = f(emailPos),
-                companyOpt = optCompany, twitterOpt = fo(optTwitterPos),
-                bio = f(bioPos), photoOpt = fo(optPhotoPos))
+              val speaker =
+                Speaker(
+                  name = f(namePos),
+                  email = f(emailPos),
+                  companyOpt = fo(companyPos),
+                  roleOpt = fo(rolePos)
+                  //                twitterOpt = fo(optTwitterPos), bio = f(bioPos), photoOpt = fo(optPhotoPos)
+                )
+
+              val tags =
+                resolveTags(lengthTags, lengthTagPrefix)(f(lengthPos)) ++
+                  resolveTags(dataTags, dataTagPrefix)(f(dataPos)) ++
+                  resolveTags(codeTags, codeTagPrefix)(f(codePos))
 
               Some(
                 Talk(
-                  key=fo(key), id = i,
-                  title = f(titlePos), body = f(bodyPos),
+                  // key=fo(key),
+                  key = None,
+                  id = i,
+                  title = f(titlePos),
+                  tags = tags,
+                  body = f(bodyPos),
                   speaker = speaker
                 )
               )
@@ -71,5 +157,14 @@ object Talk {
       case _ => println("there seems to be not enough data in your table!")
         List()
     }
+  }
+}
+
+object ShowTalks {
+  def main(args: Array[String]): Unit = {
+    val inputFile = if (args.length>0) args(0) else "dbtb.tsv"
+    val talks = Talk.readFromTSV(inputFile)
+
+    talks.foreach(println(_))
   }
 }
