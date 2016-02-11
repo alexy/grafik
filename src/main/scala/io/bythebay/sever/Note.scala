@@ -22,22 +22,23 @@ case class TalkBody(
                      email:     String,
                      company:   Option[String],
                      role:      Option[String],
+                     title:     String,
                      body:      String,
                      tags:      List[String],
                      tagsOther: List[String],
                      twitter:   Option[String],
                      bio:       Option[String]
                    ) {
-  def show(ts: List[String]): String = ts.mkString(", ")
+  def showTags(ts: List[String]): String = ts.mkString(", ")
 
   val showEmail     = tagged(email,      "<p><pre>")
   val showCompany   = taggedOpt(company, "<b>")
   val showRole      = taggedOpt(role,    "<b><i>")
-  val showTagsOther = if (tagsOther.isEmpty) "" else "<br/><p>other tags: <b>${show(tagsOther)}</b></p>"
+  val showTagsOther = if (tagsOther.isEmpty) "" else s"<p><b>${showTags(tagsOther)}</b></p>"
   //  twitter.map(hasPrefix('@')
 
   override def toString =
-  s"$showEmail<p>$showCompany * $showRole</p><br/>$showTagsOther<p>$body</p>"
+  s"$showEmail<p>$showCompany * $showRole</p><br/><b>$title</b>$showTagsOther<p>$body</p>"
 
   println(toString)
 }
@@ -127,6 +128,7 @@ object Main {
 
     talks
 //      .take(1)
+        .drop(100)
       .foldLeft((allTags, allNotes)) { case ((oldTags, oldNotes), talk) =>
 //      val title = TalkTitle(1, "John Smith")
 //      val body = TalkBody(email = "a@b.com", company = Some("Verizon"), twitter = Some("@jsmith"),
@@ -157,6 +159,7 @@ object Main {
         role      =speaker.roleOpt,
         tags      =talk.tags,
         tagsOther =talk.tagsOther,
+        title     =talk.title,
         body      =talk.body,
         bio       =speaker.bioOpt)
 

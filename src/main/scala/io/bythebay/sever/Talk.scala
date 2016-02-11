@@ -99,7 +99,7 @@ object Talk {
           val companyPos = position("company")
           val rolePos = position("role")
 
-          val titlePos = position("role")
+          val titlePos = position("title")
           val bodyPos = position("abstract")
           val lengthPos = position("length")
           //          val optTwitterPos = schema("Speaker's Twitter handle")
