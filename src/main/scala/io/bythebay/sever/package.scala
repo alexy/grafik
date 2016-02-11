@@ -5,7 +5,13 @@ package io.bythebay
  */
 package object sever {
     def so(s: String): Option[String] = Option(s).filter(_.trim.nonEmpty)
-    def well(so: Option[String]): String = so.getOrElse("")
+    def showInfix(so: Option[String], prefix: String = "", suffix: String = ""): String = so.map(x => s"$prefix$x$suffix").getOrElse("")
+    def tagged(s: String, prefix: String): String = {
+        // prefix.replaceAll("<","</") will not work for nested tags!
+        val suffix = prefix.split("<").filter(_.nonEmpty).map("</"+_).reverse.mkString
+        s"$prefix$s$suffix"
+    }
+    def taggedOpt(so: Option[String], prefix: String = ""): String = so.map(tagged(_,prefix)).getOrElse("")
     def hasPrefix(p: Char)(s: String): String = if(s(0) == p) s else p +: s
     def fieldOr[T](e: T)(f: String => T)(l: List[String])(n: Int): T =
       try { f(l(n)) } catch { case _: IndexOutOfBoundsException => e }

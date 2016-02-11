@@ -6,16 +6,18 @@ import io.bythebay.util._
  * Created by a on 5/26/15.
  */
 
-case class Talk(key:     Option[String],
-                id:      Int,
-                tags:    List[String],
-                title:   String,
-                body:    String, // abstract is a keyword in Scala
-                speaker: Speaker) {
+case class Talk(key:       Option[String],
+                id:        Int,
+                tags:      List[String],
+                tagsOther: List[String],
+                title:     String,
+                body:      String, // abstract is a keyword in Scala
+                speaker:   Speaker) {
   override def toString: String = List(
     ("id",id),
     ("title", title),
-    ("tags", tags.mkString(",")),
+    ("tags", tags.mkString("; ")),
+    ("tagsOther", tagsOther.mkString("; ")),
     ("speaker", speaker.toString),
     ("abstract", body)
   ).map{case (field, text) => s"$field:\t$text"}
@@ -64,15 +66,15 @@ object Talk {
     "20 minutes" -> "20"
   )
 
-  val dataTagPrefix = ""
+  val dataTagPrefix = "data-"
   val dataTags = Map(
     "Working with public data sets, linked above" -> "linked",
     "Showing proprietary data, lots of it" -> "proprietary",
     "Showing lots of data summaries" -> "summaries",
-    "Generally alluding to \"data in the cloud\"" -> "cloud"
+    "Generally alluding to &quot;data in the cloud&quot;" -> "cloud"
   )
 
-  val codeTagPrefix = ""
+  val codeTagPrefix = "code-"
   val codeTags = Map(
     "Live coding.  The best!" -> "live",
     "Showing code in an IDE/on Github" -> "github",
@@ -110,6 +112,7 @@ object Talk {
           val codePos = position("code")
 
           lines.zipWithIndex flatMap { case (line, i) =>
+//            println(line); System.out.flush()
             try {
               val fields: List[String] = line.split("\t").toList.map(xml.Utility.escape)
               val f: Int => String = fieldOrEmpty1(fields)
@@ -119,27 +122,34 @@ object Talk {
 
               val speaker =
                 Speaker(
-                  name = f(namePos),
-                  email = f(emailPos),
+                  name       = f(namePos),
+                  email      = f(emailPos),
                   companyOpt = fo(companyPos),
-                  roleOpt = fo(rolePos)
+                  roleOpt    = fo(rolePos)
                   //                twitterOpt = fo(optTwitterPos), bio = f(bioPos), photoOpt = fo(optPhotoPos)
                 )
+              println("role: " + speaker.roleOpt.getOrElse("<no role>"))
 
-              val tags =
-                resolveTags(lengthTags, lengthTagPrefix)(f(lengthPos)) ++
-                  resolveTags(dataTags, dataTagPrefix)(f(dataPos)) ++
-                  resolveTags(codeTags, codeTagPrefix)(f(codePos))
+              val (tags, tagsOther) = {
+                val (t, ta) = resolveTags(trackTags,  trackTagPrefix)(f(tracksPos))
+//                println(s"tracks: " + t)
+                val (l, la) = resolveTags(lengthTags, lengthTagPrefix)(f(lengthPos))
+                val (d, da) = resolveTags(dataTags,   dataTagPrefix)(f(dataPos))
+                val (c, ca) = resolveTags(codeTags,   codeTagPrefix)(f(codePos))
+
+                (t ++ l ++ d ++ c, List(ta, la, da, ca) flatMap (identity(_)))
+              }
 
               Some(
                 Talk(
                   // key=fo(key),
-                  key = None,
-                  id = i,
-                  title = f(titlePos),
-                  tags = tags,
-                  body = f(bodyPos),
-                  speaker = speaker
+                  key       = None,
+                  id        = i,
+                  title     = f(titlePos),
+                  tags      = tags,
+                  tagsOther = tagsOther,
+                  body      = f(bodyPos),
+                  speaker   = speaker
                 )
               )
             } catch {
@@ -163,8 +173,14 @@ object Talk {
 object ShowTalks {
   def main(args: Array[String]): Unit = {
     val inputFile = if (args.length>0) args(0) else "dbtb.tsv"
+
+    println("showing talks from " + inputFile)
     val talks = Talk.readFromTSV(inputFile)
 
-    talks.foreach(println(_))
+    talks foreach { case t =>
+        val tags = t.tags.mkString(";")
+        val tagsOther = t.tagsOther.mkString(";")
+        println(s"tags: $tags ... other: $tagsOther")
+    }
   }
 }

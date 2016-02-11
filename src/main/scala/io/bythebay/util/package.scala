@@ -15,10 +15,10 @@ package object util {
   def resolveTags(dict: Map[String, String],
              prefix: String = "",
              default: String = "other")
-            (tagString: String): List[String] = {
-    val candidates = tagString.split(", ")
-    candidates map { case x =>
-        dict.get(x).getOrElse(default)
-    } toList
-  }
+            (tagString: String): (List[String], Option[String]) = {
+      val tags = dict.foldLeft(Nil: List[String]) { case (acc, (k, v)) =>
+          if (tagString.contains(k)) acc :+ s"$prefix$v" else acc
+      }
+      if (tags.isEmpty) (List(s"$prefix$default"), Some(tagString)) else (tags, None)
+    }
 }
