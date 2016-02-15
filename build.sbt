@@ -15,4 +15,6 @@ libraryDependencies ++= Seq(
     //, "org.parboiled" %% "parboiled" % "2.1.0"
     //, "com.github.tototoshi" %% "scala-csv" % "1.2.1"
     , "org.scalatest" %% "scalatest" % "2.2.2" % "test"
+    , "com.lihaoyi" %% "scalatags" % "0.5.4"
+    , "com.lihaoyi" %% "acyclic" % "0.1.2" % "provided"
     )

@@ -1,8 +1,8 @@
-package io.bythebay
+package io.bythebay.util
 
 /**
- * Created by a on 5/26/15.
- */
+  * Created by a on 2/14/16.
+  */
 package object sever {
     def so(s: String): Option[String] = Option(s).filter(_.trim.nonEmpty)
     def showInfix(so: Option[String], prefix: String = "", suffix: String = ""): String = so.map(x => s"$prefix$x$suffix").getOrElse("")
@@ -25,4 +25,22 @@ package object sever {
     def readStringMapFromTSV(filename: String, separator: String = "\t") = scala.io.Source.fromFile(filename).getLines()
       .map(_.split(separator)).toList
       .foldLeft(Map[String, String]()) { case (m, a) => m + (a(0) -> a(1))}
+
+    def tryKeys[K,V](m: Map[K,V])(keys: List[K]): Option[V] = keys match {
+        case key :: rest => m.get(key) match {
+            case res @ Some(_) => res
+            case _ => tryKeys(m)(rest)
+        }
+        case _ => None
+    }
+
+    def resolveTags(dict: Map[String, String],
+                    prefix: String = "",
+                    default: String = "other")
+                   (tagString: String): (List[String], Option[String]) = {
+        val tags = dict.foldLeft(Nil: List[String]) { case (acc, (k, v)) =>
+            if (tagString.contains(k)) acc :+ s"$prefix$v" else acc
+        }
+        if (tags.isEmpty) (List(s"$prefix$default"), Some(tagString)) else (tags, None)
+    }
 }

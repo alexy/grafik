@@ -1,4 +1,4 @@
-package io.bythebay.sever
+package io.bythebay.sever.talk
 
 /**
  * Created by akhrabrov on 5/28/15.
