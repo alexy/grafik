@@ -25,7 +25,7 @@ object `package` {
     val showEmail     = tagged(s.email, "<p><pre>")
     val showCompany   = taggedOpt(s.company, "<b>")
     val showRole      = taggedOpt(s.role, "<b><i>")
-    val showOtherTags = if (s.tagsOther.isEmpty) "" else s"<p><b>${s.showOtherTags}</b></p>"
+    val showOtherTags = if (s.otherTags.isEmpty) "" else s"<p><b>${s.showOtherTags}</b></p>"
     //  twitter.map(hasPrefix('@')
 
     override def toString =

@@ -2,6 +2,8 @@ target
 .idea
 bds.tsv
 sbtb.tsv
+dbtb.tsv
+dbtb.indexcard
 devtoken.txt
 *.xlsx
 *.tsv

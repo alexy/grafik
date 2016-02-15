@@ -38,25 +38,24 @@ case class Summary(
                     title:     String,
                     body:      String,
                     tags:      List[String],
-                    tagsOther: List[String],
+                    otherTags: List[String],
                     twitter:   Option[String],
                     bio:       Option[String]
                   ) {
   val showTags      = tags.mkString(", ")
-  val showOtherTags = tagsOther.mkString(", ")
+  val showOtherTags = otherTags.mkString(", ")
+  val mayShowOtherTags = if (showOtherTags.isEmpty) "" else s" * $showOtherTags"
 
   val companyRole = List(company, role) flatMap (identity(_)) mkString " * "
 
   val companyRole_nl = if (companyRole.isEmpty) "" else companyRole+"\n"
 
+  // synopsis does not include the body
+  // for index cards, the body is included separately as text
   val synopsis =
-
-    s"""
-       | ${title}
-       | $companyRole_nl$showTags * ${showOtherTags}
-       | -----
-       | $body
-         """.stripMargin
+    s"""${title}
+       | ---------------------
+       | $companyRole_nl $showTags$mayShowOtherTags""".stripMargin
 }
 
 
@@ -127,9 +126,9 @@ object Talk {
 
         val lineOffset = 2 // header line and 0-based zipWithIndex
         val dropLines = duplicates.map(_.dropRight(1)).reduce(_++_).map(_-lineOffset).toSet
-        val uniques = lines.zipWithIndex.filterNot{ case (_,number) => dropLines.contains(number) }
 
-        val dropped = lines.zipWithIndex.filter{ case (_,number) => dropLines.contains(number) }
+        val (dropped, uniques) = lines.zipWithIndex.partition{ case (_,number) => dropLines.contains(number) }
+
         dropped foreach { case (line, number) => println(s"DROP LINE ${number+lineOffset}: $line") }
 
         println(schemaRow)
@@ -196,11 +195,11 @@ object Talk {
               val number = fo(numberPos).map{ x =>
                 val n = x.toInt
                 println(s"MANUAL number: $n")
-                n }.getOrElse(i)
+                n }.getOrElse(i+1)
               val title = f(titlePos)
               val body  = f(bodyPos)
 
-              val headline = Headline(i+1, speaker.name)
+              val headline = Headline(number, speaker.name)
 
               val summary =
                 Summary(
@@ -211,7 +210,7 @@ object Talk {
                   bio       =speaker.bioOpt,
                   headline  =headline.toString,
                   tags      =tags,
-                  tagsOther =tagsOther,
+                  otherTags =tagsOther,
                   title     =title,
                   body      =body
                 )
@@ -244,9 +243,25 @@ object Talk {
         List()
     }
   }
+
+  def talkDays(dayTags: List[String], talks: List[Talk]): Map[String, List[Talk]] = {
+    val (days, rest) = dayTags.foldLeft((Map[String, List[Talk]](), talks)) {
+      case ((days, talks), dayTag) =>
+        val (day, rest) = talks.partition(_.tags.contains(dayTag))
+      (days + (dayTag->day), rest)
+    }
+    if (rest.nonEmpty) {
+      val sinkTag = dayTags.last
+      println(s"These talks are MISSING TAGS: they didn't end up in any of the days, adding to $sinkTag:")
+      rest.foreach { case talk => println(talk.summary.headline) }
+      days + (sinkTag -> (days(sinkTag) ++ rest))
+    } else
+      days
+  }
 }
 
 object ShowTalks {
+
   def main(args: Array[String]): Unit = {
     val inputFile = if (args.length>0) args(0) else "dbtb.tsv"
 
