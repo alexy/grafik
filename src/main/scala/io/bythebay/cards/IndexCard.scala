@@ -23,6 +23,7 @@ import scala.xml.{Elem, XML}
   * }
   */
 
+// TODO doesn't work, needs scalatags extension
 object tags {
 
   def tag(prefix: String, indent: String = "  ")(body: => List[String]): List[String] = {
@@ -51,6 +52,7 @@ object tags {
 
 object Plist {
 
+
   // Apple's plist, not a PList
 
   abstract trait Pleaf
@@ -75,17 +77,89 @@ object Plist {
     }
   }
 
+  type Pmap = Map[String, Pleaf]
+
+  def apply(c: xml.Node): Pmap = {
+    val (ks, vs) = c.child partition (_.label=="key")
+    (ks map (_.text)) zip (vs map (Pleaf(_))) toMap
+  }
+
 }
 
 
-case class TalkTime(h: Int, m: Int = 0) {
-  override def toString = s"$h:$m"
-
-  if (h < 0 || h > 12 || m < 0 || m >= 60 || m % 5 != 0) throw new IllegalArgumentException(s"hour/minutes are wrong: $this")
+abstract trait KindTalk
+case object FullTalk    extends KindTalk { override def toString = "40"}
+case object HalfTalk    extends KindTalk { override def toString = "20"}
+case object KeynoteTalk extends KindTalk { override def toString = "KN"}
+object KindTalk {
+  def apply(kind: String): KindTalk =
+    kind match {
+          case ""  => FullTalk
+          case "H" => HalfTalk
+          case "K" => KeynoteTalk
+          case _ => throw new IllegalArgumentException(s"bad kind of talk: $kind")
+    }
 }
 
-case class TimeRange(start: TalkTime, end: TalkTime) {
-  if (end.h < start.h) throw new IllegalArgumentException(s"hour/minutes are wrong: $start<$end")
+case class TalkTime( h: Int, m: Int = 0) {
+  if (h < 0 || h > 12 || m < 0 || m >= 60 || m % 5 != 0)
+    throw new IllegalArgumentException(s"hour/minutes are wrong: $this")
+
+  // the only use case for now is doubling half-talks followed by a blank card
+  def addTime(hours: Int = 0, minutes: Int = 20): TalkTime = {
+    val mm = m + minutes
+    val h2 = mm / 60
+    val m2 = mm - h2 * 60
+    TalkTime(h+h2, m2)
+  }
+
+  override def toString = {
+    val mm = ('0'+:s"$m").takeRight(2)
+    val hh = (' '+:s"$h").takeRight(2)
+    s"$hh:$mm"
+  }
+}
+
+object TalkTime {
+  def apply(t: String): TalkTime =
+    try {
+      val a = t split ":"
+      new TalkTime(a(0).toInt, a(1).toInt)
+    }
+    catch {
+      case _: Throwable => throw new IllegalArgumentException(s"bad talk time: $t")
+    }
+
+  def range(r: String): (TalkTime, TalkTime) = try {
+    val a = r split "-"
+    a match {
+      case Array(s,f) => (TalkTime(s), TalkTime(f))
+      // TODO ensure TalkTime(s) < TalkTime(f)
+    }
+  }
+
+  catch {
+    case _: Throwable => throw new IllegalArgumentException(s"bad talk range: $r")
+  }
+}
+
+case class TalkSpan(slot: Char, start: TalkTime, finish: TalkTime, kind: KindTalk) {
+  override def toString = s"$slot $start-$finish $kind"
+}
+
+object TalkSpan {
+  def apply(s: String): TalkSpan = try {
+    val parts = s split " "
+    val (start, finish) = TalkTime.range(parts(1))
+    val c = parts(0).head // must be single character
+    parts match {
+      case Array(_, _, k) => new TalkSpan(c, start, finish, KindTalk(k))
+      case Array(_, _)    => new TalkSpan(c, start, finish, FullTalk)
+    }
+  }
+  catch {
+    case _: Throwable => throw new IllegalArgumentException(s"bad talk span: $s")
+  }
 }
 
 abstract trait CardColor
@@ -148,6 +222,9 @@ case class IndexCard(draft: Boolean = true,
     <string>{text}</string>
   </dict>
 
+  def isBlank:  Boolean = title.trim.isEmpty
+  def nonBlank: Boolean = !isBlank
+
 //  def showDraft = if (draft) 'D' else '-'
   val showRelation = showMaybe(relation)
 //  val showStack = stack.map(cond => s", stack $cond").getOrElse("")
@@ -167,9 +244,7 @@ object IndexCard {
 
 
   def apply(c: scala.xml.Node): IndexCard = {
-    val (ks, vs) = c.child partition (_.label=="key")
-    // NB _.child.head.toString == _.text
-    val m = (ks map (_.text)) zip (vs map (Pleaf(_))) toMap
+    val m = Plist(c)
 
     // ks: draft, label, relation, sortOrder, stack, synopsis, text, title
     val draft     = m("draft")         match { case Pbool(b)         => b
@@ -198,8 +273,30 @@ object IndexCard {
   }
 }
 
+case class Label(color: CardColor, sortOrder: Int, description: String) {
+  override def toString =
+    s"label $color\t$sortOrder $description"
+}
 
-case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil) {
+object Label {
+  def apply(c: xml.Node): Label = {
+    val m = Plist(c)
+
+    val color           = m("colorNameKey")    match { case Pstring(s) => CardColor.s2c(s)
+                    case _ => throw new IllegalArgumentException("bad colorNameKey") }
+    val sortOrder       = m("sortOrder")       match { case Pint(i)    => i
+                    case _ => throw new IllegalArgumentException("bad sortOrder") }
+    val userDescription = m("userDescription") match { case Pstring(s) => s
+                    case _ => throw new IllegalArgumentException("bad userDescription") }
+
+    new Label(color, sortOrder, userDescription)
+  }
+}
+
+case class ScheduledTalk(card: IndexCard, slot: TalkSpan)
+
+
+case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil, labels: Seq[Label] = Nil) {
   import IndexCardProject._
 
   val cardFileName = fileName(name)
@@ -222,7 +319,23 @@ case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil) {
     cardFile.write(footer)
     cardFile.close()
     println(s"Wrote ${cards.size} cards to $realPathName.")
-  }}
+  }
+
+  val times = labels filterNot(_.color==White) map { case Label(color,_,description) =>
+    (color, TalkSpan(description))
+  } toMap
+
+  val schedule = cards.zipWithIndex collect { case (card, i) if card.nonBlank =>
+
+    val slot  = times(card.label)
+    val slot2 = if (i < cards.size-1 && cards(i+1).isBlank)
+        slot.copy(finish=slot.finish.addTime(minutes=20))
+      else
+        slot
+
+    ScheduledTalk(card, slot2)
+  }
+}
 
 
 object IndexCardProject {
@@ -235,10 +348,14 @@ object IndexCardProject {
     println(s"Loading IndexCard project from $pathname")
     val x = XML.loadFile(pathname)
     val a = x \\ "array"
-    val cs = a(0).child \\ "dict"
-    val cards = cs map (IndexCard(_))
 
-    new IndexCardProject(name, cards)
+    val cs = a(0).child \\ "dict"
+    val ls = a(1).child \\ "dict"
+
+    val cards  = cs map (IndexCard(_))
+    val labels = ls map (Label(_))
+
+    new IndexCardProject(name, cards, labels)
   }
 
   // splitting header into two to avoid having to commit to a name in the middle just yet
@@ -434,7 +551,15 @@ object LoadProject {
 
     val cardProject = IndexCardProject(day, cardPathName)
 
+    println("Cards:")
     cardProject.cards foreach (println(_))
 
+    println("Labels:")
+    cardProject.labels foreach (println(_))
+
+    println("Schedule:")
+    cardProject.schedule foreach { case ScheduledTalk(talk, slot) =>
+        println(s"$slot ===>>> $talk")
+    }
   }
 }
