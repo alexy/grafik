@@ -148,12 +148,13 @@ case class IndexCard(draft: Boolean = true,
     <string>{text}</string>
   </dict>
 
-//  def boolS(b: Boolean) = if (b) 'T' else 'F'
-  val showRelation = showMaybe(relation, ", relation ")
-  val showStack = stack.map(cond => ", stack $cond").getOrElse("")
-  val showSynoposis = showMaybe(synopsis, ", synopsis").take(30)
-  val showText     = showMaybe(text,     ", text").take(30)
-  override def toString = s"draft $draft, label $label$showRelation$showStack$title$showSynoposis$showText"
+//  def showDraft = if (draft) 'D' else '-'
+  val showRelation = showMaybe(relation)
+//  val showStack = stack.map(cond => s", stack $cond").getOrElse("")
+  val showSynoposis = showMaybe(synopsis, ", synopsis ").take(30)
+  val showText     = showMaybe(text,     ", text ").take(30)
+  override def toString = s"$label\t$showRelation $sortOrder $title"
+//    s"draft $draft, label $label$showRelation$showStack, $title$showSynoposis$showText"
 }
 
 
@@ -165,8 +166,8 @@ object IndexCard {
       synopsis = so(s.synopsis), text=so(s.body), title=s.headline)
 
 
-  def apply(c: Seq[scala.xml.Node]): IndexCard = {
-    val (ks, vs) = c partition (_.label=="key")
+  def apply(c: scala.xml.Node): IndexCard = {
+    val (ks, vs) = c.child partition (_.label=="key")
     // NB _.child.head.toString == _.text
     val m = (ks map (_.text)) zip (vs map (Pleaf(_))) toMap
 
@@ -205,8 +206,9 @@ case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil) {
   val cardPathName = pathName(name)
 
   def write(pathname: String = cardPathName): Unit = {
-    print(s"Writing to $pathname...  ")
-    val cardFile = new PrintWriter(pathname)
+    val realPathName = s"x-$pathname"
+    print(s"Writing to $realPathName...  ")
+    val cardFile = new PrintWriter(realPathName)
 
     cardFile.write(s"$header1$name$header2")
 
@@ -219,7 +221,7 @@ case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil) {
 
     cardFile.write(footer)
     cardFile.close()
-    println(s"Wrote ${cards.size} cards to $cardPathName.")
+    println(s"Wrote ${cards.size} cards to $realPathName.")
   }}
 
 
@@ -230,6 +232,7 @@ object IndexCardProject {
   def pathName(name: String) = s"/Users/a/IndexCard/${fileName(name)}"
 
   def apply(name: String, pathname: String): IndexCardProject = {
+    println(s"Loading IndexCard project from $pathname")
     val x = XML.loadFile(pathname)
     val a = x \\ "array"
     val cs = a(0).child \\ "dict"
