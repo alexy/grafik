@@ -118,6 +118,7 @@ object Talk {
     "Making air curly braces with hand waves" -> "air"
   )
 
+  // TODO create sidecar file for the main taks.tsv
   val duplicates = List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
 
   def readFromTSV(filename: String): List[Talk] = {

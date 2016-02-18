@@ -16,22 +16,21 @@ import org.apache.poi.xssf.usermodel._
 object Sched {
   def main(args: Array[String]): Unit = {
     val talksFile     = args(0)
-    val timetableFile = args(1)
-    val days = args.slice(2,4) // Array("2015-08-14", "2015-08-15")
-    println(s"reading timetable from $timetableFile, filling days ${days(0)}..${days(1)}")
+    val dayRange = args.slice(1,3) // Array("2015-08-14", "2015-08-15")
+    println(s"filling days ${dayRange(0)}..${dayRange(1)}")
 
-    val excelIn  = args(4)
-    // TODO the first empty row can determine automatically
-    val rowBase  = args(5).toInt // 8 for SBTB, 47 for BDS
-    val excelOut = args(6)
-//    val timetableFile = args(2)
+    val excelIn  = args(3)
+    val excelOut = args(4)
 
-    println(s"reading talks from $talksFile, sessions from $excelIn, writing $excelOut")
+    val cardFileNames = args.drop(5)
 
-    val talks = Talk.readFromTSV(talksFile).filter(_.key.nonEmpty).sortBy(_.key)
-    val timetable: Map[Char,String] = readStringMapFromTSV(timetableFile) map { case (k,v) => (k(0),v) }
+    println(s"reading talks from $talksFile, sessions from $excelIn, writing $excelOut, days: " + cardFileNames.mkString(", "))
 
-    println(s"read ${talks.size} keyed talks, ${timetable.size} time slots in a day")
+    val talks = Talk.readFromTSV(talksFile)
+
+    println(s"read ${talks.size} talks")
+
+    val rowBase = 8 // writing the default Excel template from Sched from this row
 
 //    sys.exit(0)
 
@@ -74,7 +73,6 @@ object Sched {
 
     talks.zipWithIndex foreach { case (talk, talkIndex) =>
       val key = talk.key.get // here the key must be present past filter above
-      val talkKey = new TalkKey(key, timetable, days)
 
       val r = sheet.createRow(rowBase+talkIndex)
 

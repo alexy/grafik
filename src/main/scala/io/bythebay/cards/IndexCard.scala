@@ -293,10 +293,14 @@ object Label {
   }
 }
 
-case class ScheduledTalk(card: IndexCard, slot: TalkSpan)
+case class TalkKey(day: Char, slot: Char, track: Char) {
+  override def toString = s"$day$slot$track"
+}
+
+case class ScheduledTalk(card: IndexCard, slot: TalkSpan, key: TalkKey)
 
 
-case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil, labels: Seq[Label] = Nil) {
+case class IndexCardProject(name: String, letter: Char, cards: Seq[IndexCard] = Nil, labels: Seq[Label] = Nil) {
   import IndexCardProject._
 
   val cardFileName = fileName(name)
@@ -333,7 +337,9 @@ case class IndexCardProject(name: String, cards: Seq[IndexCard] = Nil, labels: S
       else
         slot
 
-    ScheduledTalk(card, slot2)
+    val talkKey = TalkKey(letter, slot.slot, card.relation.get.head)
+
+    ScheduledTalk(card, slot2, talkKey)
   }
 }
 
@@ -344,7 +350,7 @@ object IndexCardProject {
   // /Users/a/Dropbox/IndexCard
   def pathName(name: String) = s"/Users/a/IndexCard/${fileName(name)}"
 
-  def apply(name: String, pathname: String): IndexCardProject = {
+  def apply(name: String, letter: Char, pathname: String): IndexCardProject = {
     println(s"Loading IndexCard project from $pathname")
     val x = XML.loadFile(pathname)
     val a = x \\ "array"
@@ -355,7 +361,7 @@ object IndexCardProject {
     val cards  = cs map (IndexCard(_))
     val labels = ls map (Label(_))
 
-    new IndexCardProject(name, cards, labels)
+    new IndexCardProject(name, letter, cards, labels)
   }
 
   // splitting header into two to avoid having to commit to a name in the middle just yet
@@ -529,12 +535,13 @@ object CreateProject {
 
     val cardFileName = args(1)
     val tagDays = List("law", "democracy", "life", "ux", "aiot", "text", "general") // general captures the rest
+    val tagLetters = "WDLUATG".toCharArray
 
     val days = Talk.talkDays(tagDays, talks)
 
-    days foreach { case (day, talks) =>
+    (days zip tagLetters) foreach { case ((day, talks), letter)  =>
         val cards = talks.zipWithIndex map { case (talk, i) =>  IndexCard(talk.summary, i) }
-       val cardProject = IndexCardProject(day, cards)
+        val cardProject = IndexCardProject(day, letter, cards)
         cardProject.write()
     }
   }
@@ -545,11 +552,12 @@ object LoadProject {
 
   def main(args: Array[String]) = {
 
-    val day = "text"
+    val day       = "text"
+    val dayLetter = 'T'
 
     val cardPathName = pathName(day)
 
-    val cardProject = IndexCardProject(day, cardPathName)
+    val cardProject = IndexCardProject(day, dayLetter, cardPathName)
 
     println("Cards:")
     cardProject.cards foreach (println(_))
@@ -558,8 +566,8 @@ object LoadProject {
     cardProject.labels foreach (println(_))
 
     println("Schedule:")
-    cardProject.schedule foreach { case ScheduledTalk(talk, slot) =>
-        println(s"$slot ===>>> $talk")
+    cardProject.schedule foreach { case ScheduledTalk(talk, slot, talkKey) =>
+        println(s"$talkKey $slot ===>>> $talk")
     }
   }
 }

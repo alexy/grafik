@@ -17,7 +17,7 @@ object Speakers {
     val rowBase  = args(2).toInt // 6 from scratch
     val excelOut = args(3)
 
-    val talks = Talk.readFromTSV(talksFile).filter(_.key.nonEmpty).sortBy(_.key)
+    val talks = Talk.readFromTSV(talksFile)//.filter(_.key.nonEmpty).sortBy(_.key)
 
     val speakers = talks map (_.speaker) sortBy (_.name)
 
