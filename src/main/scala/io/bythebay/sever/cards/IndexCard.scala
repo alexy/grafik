@@ -348,7 +348,7 @@ case class IndexCardProject(name:      String,
   val talks = Talk.readFromTSV(talksFile)
   val idTalks = (talks map (_.id)) zip talks toMap
 
-  val schedule = cards.zipWithIndex collect { case (card, i) if card.nonBlank =>
+  val schedule = cards.zipWithIndex collect { case (card, i) if card.nonBlank && card.label!=White =>
 
     val slot  = times(card.label)
     val slot2 = if (i < cards.size-1 && cards(i+1).isBlank)
@@ -358,7 +358,7 @@ case class IndexCardProject(name:      String,
 
     val track = card.relation.get.headOption match {
       case Some(t) => t
-      case _ => throw new MissingData(s"do not have stack inforation for card $card")
+      case _ => throw new MissingData(s"do not have stack information for card $card")
     }
     val talkKey = TalkKey(letter, slot.slot, track)
 

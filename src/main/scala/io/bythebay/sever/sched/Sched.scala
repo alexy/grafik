@@ -4,12 +4,11 @@ import java.io._
 import java.util.Locale
 
 import io.bythebay.excel.Implicits._
-import io.bythebay.sever.cards.{IndexCardProject, ScheduledTalk, TalkKey}
-import io.bythebay.sever.talk.Talk
+import io.bythebay.sever.cards.{IndexCardProject, ScheduledTalk}
 import io.bythebay.util.sever.showMaybe
 import org.apache.poi.ss.util._
 import org.apache.poi.xssf.usermodel._
-import org.joda.time.{LocalDate, DateTime}
+import org.joda.time.{Period, LocalDate}
 
 /**
  * Created by a on 5/26/15.
@@ -41,9 +40,9 @@ class ExcelSched(excelIn: String, rowBase: Int)
   cellStyleDate2.setDataFormat(
     createHelper.createDataFormat().getFormat("m/d/yy h:mm"))
 
-  override def talkRow(st: ScheduledTalk, talkIndex: Integer): Unit = {
+  override def talkRow(st: ScheduledTalk, row: Integer): Unit = {
 
-    val r = sheet.createRow(rowBase+talkIndex)
+    val r = sheet.createRow(row)
 
     val startFinish = st.slot.asList map (time => (st.date, time))
 
@@ -85,13 +84,14 @@ object Sched {
 
   }
   object Params {
+    val dir = "/l/dbtb/data/"
+
     def apply(args: Array[String]): Params = {
       val letters = args(5).toCharArray
       val cardFiles = args.drop(6)
       assert(letters.size == cardFiles.size, s"number of letters (${letters.size}) in ${letters.mkString(",")} "+
       s"must correspond to the number of card files (${cardFiles.size}): ${cardFiles.mkString(",")}")
 
-      val dir = "/l/dbtb/data/"
       new Params(
         talksFile  = dir + args(0),
         fromDay    = new LocalDate(args(1)),
@@ -99,7 +99,7 @@ object Sched {
         excelIn    = dir + args(3),
         excelOut   = dir + args(4),
         dayLetters = letters,
-        cardFiles  = cardFiles map (dir + _)
+        cardFiles  = cardFiles // map (name=>s"$dir$name.indexcard")
       )
     }
   }
@@ -110,19 +110,27 @@ object Sched {
 
     println(s"reading talks from ${par.talksFile}, sessions from ${par.excelIn}, writing ${par.excelOut}, days: " + par.cardFiles.mkString(", "))
 
-    val cardProject = IndexCardProject(
-        name="pipelines", letter='P',
-        cardsFile=par.cardFiles.head,
-        talksFile=par.talksFile,
-        date=par.fromDay
+    val rowBase = 9 // for 0-based row increments
+    val excelSched = new ExcelSched(par.excelIn, rowBase)
+
+    val dates = (0 to new Period(par.fromDay, par.toDay).getDays) map (par.fromDay.plusDays(_))
+
+    (par.dayLetters zip dates zip par.cardFiles).foldLeft(9) { case (base, ((letter, date), cardFile)) =>
+      val cardProject = IndexCardProject(
+        name      = cardFile,
+        letter    = letter,
+        cardsFile = s"${Params.dir}$cardFile.indexcard",
+        talksFile = par.talksFile,
+        date      = par.fromDay
       )
 
-    val excelSched = new ExcelSched(par.excelIn, 8)
+      cardProject.schedule.zipWithIndex foreach { case (scheduledTalk, i) =>
+        excelSched.talkRow(scheduledTalk, base + i)
+      }
 
-    cardProject.schedule.zipWithIndex foreach { case (scheduledTalk, i) =>
-      excelSched.talkRow(scheduledTalk, i)
+      base + cardProject.schedule.size
+
     }
-
     excelSched.write(par.excelOut)
   }
 }
