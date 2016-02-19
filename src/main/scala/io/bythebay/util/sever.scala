@@ -4,6 +4,12 @@ package io.bythebay.util
   * Created by a on 2/14/16.
   */
 package object sever {
+    val digits = """\D*(\d+).*""".r
+    def firstInt(s: String): Option[Int] = digits.unapplySeq(s) match {
+        case Some(id::_) => Some(id.toInt)
+        case _ => None
+    }
+
     def so(s: String): Option[String] = Option(s).filter(_.trim.nonEmpty)
     def showMaybe(so: Option[String], prefix: String = "", suffix: String = ""): String = so.map(x => s"$prefix$x$suffix").getOrElse("")
     def tagged(s: String, prefix: String): String = {

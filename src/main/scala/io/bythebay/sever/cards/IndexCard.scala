@@ -4,7 +4,8 @@ import java.io.PrintWriter
 
 import io.bythebay.sever.cards.Plist.{Pint, Pstring, Pbool, Pleaf}
 import io.bythebay.sever.talk.{Talk, Summary}
-import io.bythebay.util.sever.{so,showMaybe}
+import io.bythebay.util.sever.{so,showMaybe,firstInt}
+import org.joda.time.{LocalDate, DateTime}
 
 import scala.xml.{Elem, XML}
 
@@ -22,6 +23,8 @@ import scala.xml.{Elem, XML}
   * lazy val array = "array".tag
   * }
   */
+
+class MissingData(s: String) extends Throwable(s)
 
 // TODO doesn't work, needs scalatags extension
 object tags {
@@ -145,6 +148,7 @@ object TalkTime {
 
 case class TalkSpan(slot: Char, start: TalkTime, finish: TalkTime, kind: KindTalk) {
   override def toString = s"$slot $start-$finish $kind"
+  def asList: List[TalkTime] = List(start, finish)
 }
 
 object TalkSpan {
@@ -202,7 +206,11 @@ case class IndexCard(draft: Boolean = true,
                      stack: Option[Boolean] = None,
                      synopsis: Option[String] = None,
                      text: Option[String] = None,
-                     title: String) {
+                     title: String,
+//                     summary: Option[Summary] = None,
+                     id: Option[Int] = None) {
+
+
   def truthXML(cond: Boolean) = if (cond) <true/> else <false/>
   def toXML =
   <dict>
@@ -226,10 +234,10 @@ case class IndexCard(draft: Boolean = true,
   def nonBlank: Boolean = !isBlank
 
 //  def showDraft = if (draft) 'D' else '-'
-  val showRelation = showMaybe(relation)
+  val showRelation  = showMaybe(relation)
 //  val showStack = stack.map(cond => s", stack $cond").getOrElse("")
   val showSynoposis = showMaybe(synopsis, ", synopsis ").take(30)
-  val showText     = showMaybe(text,     ", text ").take(30)
+  val showText      = showMaybe(text,     ", text ").take(30)
   override def toString = s"$label\t$showRelation $sortOrder $title"
 //    s"draft $draft, label $label$showRelation$showStack, $title$showSynoposis$showText"
 }
@@ -240,7 +248,9 @@ object IndexCard {
   def apply(s: Summary, i: Int): IndexCard =
     new IndexCard(
       draft=true, label=White, relation=None, sortOrder=i, stack=None,
-      synopsis = so(s.synopsis), text=so(s.body), title=s.headline)
+      synopsis = so(s.synopsis), text=so(s.body), title=s.headline,
+//      summary=Some(s),
+      id=firstInt(s.headline))
 
 
   def apply(c: scala.xml.Node): IndexCard = {
@@ -269,7 +279,9 @@ object IndexCard {
     val title     = m("title")         match { case Pstring(s)       => s
                     case _ => throw new IllegalArgumentException("bad title") }
 
-    new IndexCard(draft, color, relation, sortOrder, stack, synopsis, text, title)
+    val id        = firstInt(title)
+
+    new IndexCard(draft, color, relation, sortOrder, stack, synopsis, text, title, id)
   }
 }
 
@@ -297,10 +309,14 @@ case class TalkKey(day: Char, slot: Char, track: Char) {
   override def toString = s"$day$slot$track"
 }
 
-case class ScheduledTalk(card: IndexCard, slot: TalkSpan, key: TalkKey)
+case class ScheduledTalk(card: IndexCard, date: LocalDate, slot: TalkSpan, key: TalkKey, talk: Option[Talk])
 
-
-case class IndexCardProject(name: String, letter: Char, cards: Seq[IndexCard] = Nil, labels: Seq[Label] = Nil) {
+case class IndexCardProject(name:      String,
+                            letter:    Char,
+                            cards:     Seq[IndexCard] = Nil,
+                            labels:    Seq[Label] = Nil,
+                            talksFile: String = "/l/dbtb/data/dbtb.tsv",
+                            date:      LocalDate) {
   import IndexCardProject._
 
   val cardFileName = fileName(name)
@@ -329,6 +345,9 @@ case class IndexCardProject(name: String, letter: Char, cards: Seq[IndexCard] = 
     (color, TalkSpan(description))
   } toMap
 
+  val talks = Talk.readFromTSV(talksFile)
+  val idTalks = (talks map (_.id)) zip talks toMap
+
   val schedule = cards.zipWithIndex collect { case (card, i) if card.nonBlank =>
 
     val slot  = times(card.label)
@@ -337,9 +356,19 @@ case class IndexCardProject(name: String, letter: Char, cards: Seq[IndexCard] = 
       else
         slot
 
-    val talkKey = TalkKey(letter, slot.slot, card.relation.get.head)
+    val track = card.relation.get.headOption match {
+      case Some(t) => t
+      case _ => throw new MissingData(s"do not have stack inforation for card $card")
+    }
+    val talkKey = TalkKey(letter, slot.slot, track)
 
-    ScheduledTalk(card, slot2, talkKey)
+    val talkOpt = for (k <- card.id; v <- idTalks.get(k)) yield { v }
+
+//    val talk = talkOpt match {
+//      case Some(t) => t
+//      case _ => throw new MissingData(s"ERROR: cannot find talk for card id ${card.id}: $card")
+//    }
+    ScheduledTalk(card, date, slot2, talkKey, talkOpt)
   }
 }
 
@@ -350,9 +379,9 @@ object IndexCardProject {
   // /Users/a/Dropbox/IndexCard
   def pathName(name: String) = s"/Users/a/IndexCard/${fileName(name)}"
 
-  def apply(name: String, letter: Char, pathname: String): IndexCardProject = {
-    println(s"Loading IndexCard project from $pathname")
-    val x = XML.loadFile(pathname)
+  def apply(name: String, letter: Char, cardsFile: String, talksFile: String, date: LocalDate): IndexCardProject = {
+    println(s"Loading IndexCard project from $cardsFile")
+    val x = XML.loadFile(cardsFile)
     val a = x \\ "array"
 
     val cs = a(0).child \\ "dict"
@@ -361,7 +390,7 @@ object IndexCardProject {
     val cards  = cs map (IndexCard(_))
     val labels = ls map (Label(_))
 
-    new IndexCardProject(name, letter, cards, labels)
+    new IndexCardProject(name, letter, cards, labels, talksFile, date)
   }
 
   // splitting header into two to avoid having to commit to a name in the middle just yet
@@ -533,7 +562,9 @@ object CreateProject {
     val talks = Talk.readFromTSV(args(0))
 //    val talk1 = talks.headOption.get
 
+    val talkFileName = args(0)
     val cardFileName = args(1)
+
     val tagDays = List("law", "democracy", "life", "ux", "aiot", "text", "general") // general captures the rest
     val tagLetters = "WDLUATG".toCharArray
 
@@ -541,7 +572,7 @@ object CreateProject {
 
     (days zip tagLetters) foreach { case ((day, talks), letter)  =>
         val cards = talks.zipWithIndex map { case (talk, i) =>  IndexCard(talk.summary, i) }
-        val cardProject = IndexCardProject(day, letter, cards)
+        val cardProject = IndexCardProject(day, letter, cardFileName, talkFileName, DateTime.now.toLocalDate)
         cardProject.write()
     }
   }
@@ -556,8 +587,11 @@ object LoadProject {
     val dayLetter = 'T'
 
     val cardPathName = pathName(day)
+    val talkPathName = args(0)
 
-    val cardProject = IndexCardProject(day, dayLetter, cardPathName)
+    val date = DateTime.now.toLocalDate
+
+    val cardProject = IndexCardProject(day, dayLetter, cardPathName, talkPathName, date)
 
     println("Cards:")
     cardProject.cards foreach (println(_))
@@ -566,8 +600,8 @@ object LoadProject {
     cardProject.labels foreach (println(_))
 
     println("Schedule:")
-    cardProject.schedule foreach { case ScheduledTalk(talk, slot, talkKey) =>
-        println(s"$talkKey $slot ===>>> $talk")
+    cardProject.schedule foreach { case ScheduledTalk(card, date, slot, talkKey, talk) =>
+        println(s"$talkKey $date $slot ===>>> $card")
     }
   }
 }

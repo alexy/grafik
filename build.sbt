@@ -18,4 +18,5 @@ libraryDependencies ++= Seq(
     , "com.lihaoyi" %% "scalatags" % "0.5.4"
     , "com.lihaoyi" %% "acyclic" % "0.1.2" % "provided"
     , "org.json4s" %% "json4s-jackson" % "3.3.0.RC2"
+    , "com.github.nscala-time" %% "nscala-time" % "2.10.0"
     )
