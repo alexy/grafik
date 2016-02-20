@@ -2,22 +2,20 @@
  * Created by akhrabrov on 5/12/15.
  */
 
-package io.bythebay.sever.note
+package io.bythebay.sever
 
-
-import io.bythebay.sever.talk.{Talk, Summary}
+import com.evernote.auth.{EvernoteAuth, EvernoteService}
+import com.evernote.clients.{ClientFactory, NoteStoreClient}
+import com.evernote.edam.`type`.{Note, Notebook, Tag}
+import com.evernote.edam.error.{EDAMNotFoundException, EDAMUserException}
+import com.evernote.edam.notestore.NoteFilter
+import io.bythebay.sever.talk.{Summary, Talk}
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
-import com.evernote.auth.{EvernoteService, EvernoteAuth}
-import com.evernote.clients.{ClientFactory, NoteStoreClient}
-import com.evernote.edam.`type`.{Tag, Note, Notebook}
-import com.evernote.edam.error.{EDAMNotFoundException, EDAMUserException}
-import com.evernote.edam.notestore.NoteFilter
 
-
-object `package` {
+package object note {
   import io.bythebay.util.sever._
 
   implicit class Evernote(s: Summary) {

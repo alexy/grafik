@@ -116,9 +116,11 @@ case class TalkTime( h: Int, m: Int = 0) {
     TalkTime(h+h2, m2)
   }
 
+  val h24 = if (h>= 8) h else (h+12)
+
   override def toString = {
     val mm = ('0'+:s"$m").takeRight(2)
-    val hh = (' '+:s"$h").takeRight(2)
+    val hh = (' '+:s"$h24").takeRight(2)
     s"$hh:$mm"
   }
 }

@@ -130,9 +130,9 @@ object Talk {
 
         val (dropped, uniques) = lines.zipWithIndex.partition{ case (_,number) => dropLines.contains(number) }
 
-        dropped foreach { case (line, number) => println(s"DROP LINE ${number+lineOffset}: $line") }
-
-        println(schemaRow)
+//        dropped foreach { case (line, number) => println(s"DROP LINE ${number+lineOffset}: $line") }
+          println(s"dropped ${dropped.size} lines")
+//        println(schemaRow)
 
         val schema: Map[String, Int] = schemaRow.split("\t").zipWithIndex.toMap
 
@@ -178,7 +178,7 @@ object Talk {
                   roleOpt    = fo(rolePos)
                   //                twitterOpt = fo(optTwitterPos), bio = f(bioPos), photoOpt = fo(optPhotoPos)
                 )
-              println("role: " + speaker.roleOpt.getOrElse("<no role>"))
+//              println("role: " + speaker.roleOpt.getOrElse("<no role>"))
 
               val keynoteOpt = fo(keynotePos)
 

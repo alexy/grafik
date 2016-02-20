@@ -47,7 +47,7 @@ class ExcelSched(excelIn: String, rowBase: Int)
     val startFinish = st.slot.asList map (time => (st.date, time))
 
     r.createCellA('a').setCellValue(st.key.toString)
-    r.createCellA('b').setCellValue(showMaybe(st.talk.map(_.title)))
+    r.createCellA('b').setCellValue(st.talk.map(_.title).getOrElse("TBD"))
     r.createCellA('c').setCellValue("Y")
 
     startFinish.zipWithIndex foreach { case ((date,time), i) =>
@@ -68,6 +68,7 @@ class ExcelSched(excelIn: String, rowBase: Int)
     val fileOut = new FileOutputStream(excelOut)
     wb.write(fileOut)
     fileOut.close()
+    println(s"finished writing Excel Sched schedule to $excelOut.")
   }
 }
 
@@ -110,18 +111,18 @@ object Sched {
 
     println(s"reading talks from ${par.talksFile}, sessions from ${par.excelIn}, writing ${par.excelOut}, days: " + par.cardFiles.mkString(", "))
 
-    val rowBase = 9 // for 0-based row increments
+    val rowBase = 8 // for 0-based row increments
     val excelSched = new ExcelSched(par.excelIn, rowBase)
 
     val dates = (0 to new Period(par.fromDay, par.toDay).getDays) map (par.fromDay.plusDays(_))
 
-    (par.dayLetters zip dates zip par.cardFiles).foldLeft(9) { case (base, ((letter, date), cardFile)) =>
+    (par.dayLetters zip dates zip par.cardFiles).foldLeft(rowBase) { case (base, ((letter, date), cardFile)) =>
       val cardProject = IndexCardProject(
         name      = cardFile,
         letter    = letter,
         cardsFile = s"${Params.dir}$cardFile.indexcard",
         talksFile = par.talksFile,
-        date      = par.fromDay
+        date      = date
       )
 
       cardProject.schedule.zipWithIndex foreach { case (scheduledTalk, i) =>
