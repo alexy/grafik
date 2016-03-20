@@ -118,15 +118,17 @@ object Talk {
     "Making air curly braces with hand waves" -> "air"
   )
 
-  // TODO create sidecar file for the main taks.tsv
+  // TODO create sidecar duplicate line file for the main talks.tsv, or mark them in a column
   val duplicates = List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
 
-  def readFromTSV(filename: String): List[Talk] = {
+  def readFromTSV(filename: String, idBase: Int = 0, dedup: Boolean = false): List[Talk] = {
     scala.io.Source.fromFile(filename).getLines().toList match {
       case schemaRow :: lines =>
 
         val lineOffset = 2 // header line and 0-based zipWithIndex
-        val dropLines = duplicates.map(_.dropRight(1)).reduce(_++_).map(_-lineOffset).toSet
+        val dropLines: Set[Int] = if (dedup)
+            duplicates.map(_.dropRight(1)).reduce(_++_).map(_-lineOffset).toSet
+          else Set.empty
 
         val (dropped, uniques) = lines.zipWithIndex.partition{ case (_,number) => dropLines.contains(number) }
 
@@ -196,7 +198,7 @@ object Talk {
               val number = fo(numberPos).map{ x =>
                 val n = x.toInt
                 println(s"MANUAL number: $n")
-                n }.getOrElse(i+1)
+                n }.getOrElse(idBase + i + 1)
               val title = f(titlePos)
               val body  = f(bodyPos)
 

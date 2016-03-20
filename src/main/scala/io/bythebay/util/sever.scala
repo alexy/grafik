@@ -11,7 +11,13 @@ package object sever {
     }
 
     def so(s: String): Option[String] = Option(s).filter(_.trim.nonEmpty)
+
+    implicit class RichOptionString(val so: Option[String]) {
+        def show: String = so.getOrElse("")
+    }
+
     def showMaybe(so: Option[String], prefix: String = "", suffix: String = ""): String = so.map(x => s"$prefix$x$suffix").getOrElse("")
+
     def tagged(s: String, prefix: String): String = {
         // prefix.replaceAll("<","</") will not work for nested tags!
         val suffix = prefix.split("<").filter(_.nonEmpty).map("</"+_).reverse.mkString

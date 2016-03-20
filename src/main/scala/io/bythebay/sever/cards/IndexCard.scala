@@ -212,6 +212,7 @@ case class IndexCard(draft: Boolean = true,
 //                     summary: Option[Summary] = None,
                      id: Option[Int] = None) {
 
+  import io.bythebay.util.sever.RichOptionString
 
   def truthXML(cond: Boolean) = if (cond) <true/> else <false/>
   def toXML =
@@ -227,9 +228,9 @@ case class IndexCard(draft: Boolean = true,
     <key>title</key>
     <string>{title}</string>
     <key>synopsis</key>
-    <string>{synopsis}</string>
+    <string>{synopsis.show}</string>
     <key>text</key>
-    <string>{text}</string>
+    <string>{text.show}</string>
   </dict>
 
   def isBlank:  Boolean = title.trim.isEmpty
@@ -315,9 +316,10 @@ case class ScheduledTalk(card: IndexCard, date: LocalDate, slot: TalkSpan, key: 
 
 case class IndexCardProject(name:      String,
                             letter:    Char,
+//                           TODO put params with default arguments last
                             cards:     Seq[IndexCard] = Nil,
                             labels:    Seq[Label] = Nil,
-                            talksFile: String = "/l/dbtb/data/dbtb.tsv",
+                            talksFile: String,
                             date:      LocalDate) {
   import IndexCardProject._
 
@@ -325,7 +327,8 @@ case class IndexCardProject(name:      String,
   val cardPathName = pathName(name)
 
   def write(pathname: String = cardPathName): Unit = {
-    val realPathName = s"x-$pathname"
+//    val realPathName = s"x-$pathname"
+    val realPathName = pathname
     print(s"Writing to $realPathName...  ")
     val cardFile = new PrintWriter(realPathName)
 
@@ -379,7 +382,10 @@ object IndexCardProject {
 
   def fileName(name: String) = s"$name.indexcard"
   // /Users/a/Dropbox/IndexCard
-  def pathName(name: String) = s"/Users/a/IndexCard/${fileName(name)}"
+  def pathName(name: String) = {
+    val user = System.getProperty("user.home")
+    s"$user/Dropbox/IndexCard/${fileName(name)}"
+  }
 
   def apply(name: String, letter: Char, cardsFile: String, talksFile: String, date: LocalDate): IndexCardProject = {
     println(s"Loading IndexCard project from $cardsFile")
@@ -556,16 +562,34 @@ object IndexCardProject {
     """.stripMargin
 }
 
-object CreateProject {
-  import IndexCard._
-
+object CreateOneProject {
   def main(args: Array[String]) = {
-
-    val talks = Talk.readFromTSV(args(0))
-//    val talk1 = talks.headOption.get
 
     val talkFileName = args(0)
     val cardFileName = args(1)
+    val letter       = args(2)(0)
+    val idBase       = args(3).toInt
+
+    println(s"creating a project $cardFileName from $talkFileName, letter $letter")
+
+    val talks = Talk.readFromTSV(talkFileName, idBase)
+
+    val cards = talks.zipWithIndex map { case (talk, i) => IndexCard(talk.summary, i) }
+    val cardProject = IndexCardProject(cardFileName, letter, cards, Nil, talkFileName,
+      DateTime.now.toLocalDate)
+    cardProject.write()
+  }
+}
+
+
+object CreateAllProjects {
+
+  def main(args: Array[String]) = {
+
+    val talkFileName = args(0)
+    val cardFileName = args(1)
+
+    val talks = Talk.readFromTSV(talkFileName)
 
     val tagDays = List("law", "democracy", "life", "ux", "aiot", "text", "general") // general captures the rest
     val tagLetters = "WDLUATG".toCharArray
@@ -574,7 +598,7 @@ object CreateProject {
 
     (days zip tagLetters) foreach { case ((day, talks), letter)  =>
         val cards = talks.zipWithIndex map { case (talk, i) =>  IndexCard(talk.summary, i) }
-        val cardProject = IndexCardProject(day, letter, cardFileName, talkFileName, DateTime.now.toLocalDate)
+        val cardProject = IndexCardProject(day, letter, cards, Nil, talkFileName, DateTime.now.toLocalDate)
         cardProject.write()
     }
   }
@@ -585,11 +609,12 @@ object LoadProject {
 
   def main(args: Array[String]) = {
 
+    val talkPathName = args(0)
+
     val day       = "text"
     val dayLetter = 'T'
 
     val cardPathName = pathName(day)
-    val talkPathName = args(0)
 
     val date = DateTime.now.toLocalDate
 

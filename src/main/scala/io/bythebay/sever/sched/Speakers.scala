@@ -11,12 +11,16 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
  */
 object Speakers {
   def main(args: Array[String]): Unit = {
-    val talksFile = args(0)
 
-    val excelIn  = args(1)
+    val dir = "/l/dbtb/data/"
+
+    val files = args.slice(0,3) map (dir+_)
+    val talksFile = files(0)
+
+    val excelIn   = files(1)
     // TODO the first empty row can determine automatically
-    val rowBase  = args(2).toInt // 6 from scratch
-    val excelOut = args(3)
+    val excelOut  = files(2)
+    val rowBase   = args(3).toInt // 6 from scratch
 
     val talks = Talk.readFromTSV(talksFile)//.filter(_.key.nonEmpty).sortBy(_.key)
 
@@ -34,6 +38,8 @@ object Speakers {
       val r = sheet.createRow(rowBase + speakerIndex)
       r.createCellA('a').setCellValue(speaker.name)
       r.createCellA('b').setCellValue(speaker.email)
+      r.createCellA('d').setCellValue(speaker.companyOpt.getOrElse(""))
+      r.createCellA('e').setCellValue(speaker.roleOpt.getOrElse(""))
       r.createCellA('g').setCellValue(speaker.bioOpt.getOrElse(""))
       speaker.twitterOpt foreach { handle =>
         r.createCellA('h').setCellValue("twitter.com/" + handle.substring(1, handle.size))
