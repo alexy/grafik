@@ -5,7 +5,7 @@ import java.util.Locale
 
 import io.bythebay.excel.Implicits._
 import io.bythebay.sever.cards.{IndexCardProject, ScheduledTalk}
-import io.bythebay.util.sever.showMaybe
+import io.bythebay.util.sever.RichOptionString
 import org.apache.poi.ss.util._
 import org.apache.poi.xssf.usermodel._
 import org.joda.time.{Period, LocalDate}
@@ -59,8 +59,8 @@ class ExcelSched(excelIn: String, rowBase: Int)
     val track = st.key.track.toString // Char gets uploaded as an integer
 
     r.createCellA('f').setCellValue(track)
-    r.createCellA('i').setCellValue(showMaybe(st.talk.map(_.body)))
-    r.createCellA('j').setCellValue(showMaybe(st.talk.map(_.speaker.name)))
+    r.createCellA('i').setCellValue(st.talk.map(_.body).show)
+    r.createCellA('j').setCellValue(st.talk.map(_.speaker.name).show)
     r.createCellA('p').setCellValue(track) // venue same as track for now
   }
 

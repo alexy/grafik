@@ -61,6 +61,8 @@ case class Summary(
 
 object Talk {
 
+// data by the bay 2016
+/*
   val keys = Map(
     "timestamp"     -> "Timestamp",
     "name"          -> "Name",
@@ -95,6 +97,43 @@ object Talk {
     "UX By the Bay" -> "ux",
     "General Slot -- 2 hours on general data processing each day" -> "general"
   )
+  */
+
+  // Scala By the Bay 2016
+  val keys = Map(
+    "timestamp" -> "Timestamp",
+    "name" -> "Name",
+    "email" -> "Email address",
+    "submitter" -> "Submitter's Email (only if separate from speaker's)",
+    "twitter" -> "Twitter Handle",
+    "twitterCompany" -> "Company Twitter Handle",
+    "company" -> "Your Company",
+    "role" -> "Role",
+    "tracks" -> "Which of the Four Conferences are the best fit?",
+    "title" -> "Talk Title",
+    "abstract" -> "Talk Abstract",
+    "github" -> "Talk Github Repo",
+    "datasets" -> "Talk Datasets",
+    "link1" -> "Talk Link 1",
+    "link1" -> "Talk Link 2",
+    "code" -> "How much code will your talk have?",
+    "data" -> "How much data are you going to show?",
+    "length" -> "Talk Duration",
+    "found" ->  "How did you learn about Scala By the Bay?",
+    "partner" -> "Would your company be a partner of Data By the Bay?",
+    "diversity" -> "Diversity and Community Support",
+    "notes" -> "Notes for the organizers",
+    "number" -> "Manual",
+    "keynote" -> "Keynote"
+  )
+
+  val trackTagPrefix = ""
+  val trackTags = Map(
+    "Scala By the Bay" -> "scala",
+    "Big Data Scala By the Bay" -> "pipelines",
+    "Twitter OSS" -> "twitter",
+    "Startup Technology" -> "startups"
+  )
 
   val lengthTagPrefix = ""
   val lengthTags = Map(
@@ -119,7 +158,7 @@ object Talk {
   )
 
   // TODO create sidecar duplicate line file for the main talks.tsv, or mark them in a column
-  val duplicates = List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
+  val duplicates = List[List[Int]]() // List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
 
   def readFromTSV(filename: String, idBase: Int = 0, dedup: Boolean = false): List[Talk] = {
     scala.io.Source.fromFile(filename).getLines().toList match {
@@ -136,7 +175,13 @@ object Talk {
           println(s"dropped ${dropped.size} lines")
 //        println(schemaRow)
 
-        val schema: Map[String, Int] = schemaRow.split("\t").zipWithIndex.toMap
+        // TODO adding trailing columns for special talks here instead of editing tsv
+        // may need to configure
+
+        val schemaKeys = schemaRow.split("\t") :+ "Manual" :+ "Keynote"
+        val schema = schemaKeys.zipWithIndex.toMap
+
+        println("keys:" + schemaKeys.mkString("\n"))
 
         def position(key: String): Int = schema(keys(key))
 
@@ -180,7 +225,7 @@ object Talk {
                   roleOpt    = fo(rolePos)
                   //                twitterOpt = fo(optTwitterPos), bio = f(bioPos), photoOpt = fo(optPhotoPos)
                 )
-//              println("role: " + speaker.roleOpt.getOrElse("<no role>"))
+              println("role: " + speaker.roleOpt.getOrElse("<no role>"))
 
               val keynoteOpt = fo(keynotePos)
 
