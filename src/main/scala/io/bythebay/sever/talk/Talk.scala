@@ -235,7 +235,6 @@ object Talk {
                     }
                   } //, bio = f(bioPos), photoOpt = fo(optPhotoPos)
                 )
-              println("role: " + speaker.roleOpt.getOrElse("<no role>"))
 
               val keynoteOpt = fo(keynotePos)
 
@@ -256,6 +255,8 @@ object Talk {
                 n }.getOrElse(idBase + i + 1)
               val title = f(titlePos)
               val body  = f(bodyPos)
+
+              println("title: " + title)
 
               val headline = Headline(number, speaker.name)
 

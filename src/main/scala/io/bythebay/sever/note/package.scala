@@ -9,6 +9,7 @@ import io.bythebay.util.sever._
 package object note {
   implicit class Evernote(s: Summary) {
 
+    val showTitle     = tagged(s.title, "<h2><b>")
     val showEmail     = tagged(s.email, "<p><pre>")
     val showCompany   = taggedOpt(s.company, "<b>")
     val showRole      = taggedOpt(s.role, "<b><i>")
@@ -18,7 +19,7 @@ package object note {
 
     override def toString =
 //      s"<b>${s.headline}</b><p>$showCompany * $showRole</p>$showOtherTags<p>${s.body}</p>"
-          s"<p>$showCompany * $showRole</p>$showEmail$showTwitter<p>${s.body}</p>"
+          s"$showTitle<p>$showCompany * $showRole</p>$showEmail$showTwitter<p>${s.body}</p>"
 
     println(toString)
   }

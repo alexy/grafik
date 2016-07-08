@@ -117,7 +117,7 @@ object Notes {
     }
 
     talks
-            .take(5)
+//            .take(1)
       //        .drop(100)
       .foldLeft((allTags, allNotes)) { case ((oldTags, oldNotes), talk) =>
       //      val title = TalkTitle(1, "John Smith")
