@@ -35,7 +35,7 @@ import io.bythebay.util.sever._
 //}
 
 object N {
-  def makeNote(noteStore: NoteStoreClient, noteTitle: String, noteBody: String, parentNotebookOpt: Option[Notebook] = None): Try[Note] = {
+  def makeNote(noteStore: NoteStoreClient, noteTitle: String, noteBody: Evernote, parentNotebookOpt: Option[Notebook] = None): Try[Note] = {
 
     val nBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
       "<!DOCTYPE en-note SYSTEM \"http://xml.evernote.com/pub/enml2.dtd\">" +
@@ -117,7 +117,7 @@ object Notes {
     }
 
     talks
-            .take(1)
+            .take(5)
       //        .drop(100)
       .foldLeft((allTags, allNotes)) { case ((oldTags, oldNotes), talk) =>
       //      val title = TalkTitle(1, "John Smith")
@@ -160,7 +160,7 @@ object Notes {
         case _ =>
       }
 
-      N.makeNote(noteStore, headline, summary.toString, Some(ourNotebook)) match {
+      N.makeNote(noteStore, headline, summary, Some(ourNotebook)) match {
         case Success(note) =>
           println(s"successfully cteated note [$headline]")
           addTags(note, noteTags)

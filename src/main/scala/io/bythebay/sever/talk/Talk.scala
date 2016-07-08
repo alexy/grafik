@@ -146,7 +146,9 @@ object Talk {
     "Working with public data sets, linked above" -> "linked",
     "Showing proprietary data, lots of it" -> "proprietary",
     "Showing lots of data summaries" -> "summaries",
-    "Generally alluding to &quot;data in the cloud&quot;" -> "cloud"
+    "Generally alluding to &quot;data in the cloud&quot;" -> "cloud",
+    "It's not a data talk actually, data structures are enough" -> "not",
+    "Not a data focused talk" -> "not"
   )
 
   val codeTagPrefix = "code-"
@@ -194,6 +196,8 @@ object Talk {
           val companyPos = position("company")
           val rolePos    = position("role")
 
+          val twitterPos = position("twitter")
+
           val titlePos   = position("title")
           val bodyPos    = position("abstract")
           val lengthPos  = position("length")
@@ -222,8 +226,14 @@ object Talk {
                   name       = f(namePos),
                   email      = f(emailPos),
                   companyOpt = fo(companyPos),
-                  roleOpt    = fo(rolePos)
-                  //                twitterOpt = fo(optTwitterPos), bio = f(bioPos), photoOpt = fo(optPhotoPos)
+                  roleOpt    = fo(rolePos),
+                  twitterOpt = fo(twitterPos).map { s =>
+                    s.toList match {
+                      case '@' :: _ => s
+                      case  Nil => s
+                      case  _  => '@' + s
+                    }
+                  } //, bio = f(bioPos), photoOpt = fo(optPhotoPos)
                 )
               println("role: " + speaker.roleOpt.getOrElse("<no role>"))
 
