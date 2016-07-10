@@ -153,7 +153,7 @@ object Talk {
 
   val codeTagPrefix = "code-"
   val codeTags = Map(
-    "Live coding.  The best!" -> "live",
+    "Live coding.  The best!" -> "live",
     "Showing code in an IDE/on Github" -> "github",
     "Code on slides" -> "slides",
     "Making air curly braces with hand waves" -> "air"
