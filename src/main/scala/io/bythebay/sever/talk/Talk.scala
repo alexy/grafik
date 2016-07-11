@@ -156,7 +156,7 @@ object Talk {
     "Live coding.  The best!" -> "live",
     "Showing code in an IDE/on Github" -> "github",
     "Code on slides" -> "slides",
-    "Making air curly braces with hand waves" -> "air"
+    "Making curly braces in the air with hand waves" -> "air"
   )
 
   // TODO create sidecar duplicate line file for the main talks.tsv, or mark them in a column
