@@ -1,11 +1,10 @@
-package io.bythebay.sever.sched
+package fm.wrk.grafik.sched
 
 import java.io._
 import java.util.Locale
 
-import io.bythebay.excel.Implicits._
-import io.bythebay.sever.cards.{IndexCardProject, ScheduledTalk}
-import io.bythebay.util.sever.RichOptionString
+import fm.wrk.grafik.cards.{IndexCardProject, ScheduledTalk}
+import fm.wrk.util.grafik.RichOptionString
 import org.apache.poi.ss.util._
 import org.apache.poi.xssf.usermodel._
 import org.joda.time.{Period, LocalDate}
@@ -41,6 +40,7 @@ class ExcelSched(excelIn: String, rowBase: Int)
     createHelper.createDataFormat().getFormat("m/d/yy h:mm"))
 
   override def talkRow(st: ScheduledTalk, row: Integer): Unit = {
+    import fm.wrk.excel.Implicits._
 
     val r = sheet.createRow(row)
 

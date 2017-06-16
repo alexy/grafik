@@ -1,13 +1,13 @@
-name := "sever"
+name := "grafik"
 
-organization := "io.bythebay"
+organization := "fm.wrk"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.11"
 
 libraryDependencies ++= Seq(
     "com.evernote" % "evernote-api" % "1.25.1"
-    , "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
-    , "io.megam" %% "newman" % "1.3.8"
+    , "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
+    , "io.megam" %% "newman" % "1.3.12"
     , "net.databinder.dispatch" %% "dispatch-core" % "0.11.2"
     , "com.twitter" %% "finagle-http" % "6.25.0"
     , "org.apache.poi" % "poi" % "3.12"

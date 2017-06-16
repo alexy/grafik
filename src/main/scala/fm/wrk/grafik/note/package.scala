@@ -1,7 +1,7 @@
-package io.bythebay.sever
+package fm.wrk.grafik
 
-import io.bythebay.sever.talk.Summary
-import io.bythebay.util.sever._
+import fm.wrk.grafik.talk.Summary
+import fm.wrk.util.grafik._
 
 /**
   * Created by akhrabrov on 7/7/16.

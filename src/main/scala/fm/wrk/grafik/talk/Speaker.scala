@@ -1,4 +1,4 @@
-package io.bythebay.sever.talk
+package fm.wrk.grafik.talk
 
 /**
  * Created by akhrabrov on 5/28/15.

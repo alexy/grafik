@@ -2,20 +2,20 @@
  * Created by akhrabrov on 5/12/15.
  */
 
-package io.bythebay.sever.note
+package fm.wrk.grafik.note
 
 import com.evernote.auth.{EvernoteAuth, EvernoteService}
 import com.evernote.clients.{ClientFactory, NoteStoreClient}
 import com.evernote.edam.`type`.{Note, Notebook, Tag}
 import com.evernote.edam.error.{EDAMNotFoundException, EDAMUserException}
 import com.evernote.edam.notestore.NoteFilter
-import io.bythebay.sever.talk.{Summary, Talk}
+import fm.wrk.grafik.talk.{Summary, Talk}
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 
 
-import io.bythebay.util.sever._
+import fm.wrk.util.grafik._
 
 //object `package` {
 //
@@ -78,7 +78,7 @@ object Notes {
 
   val env = "prod" // "dev" or "prod"
 
-  val developerToken: String = readStringMapFromTSV("devtoken.tsv", " ")(env)
+  val developerToken: String = readStringMapFromTSV("devtoken.tsv")(env)
 
   println("devtoken: " + developerToken)
 
@@ -99,7 +99,7 @@ object Notes {
 
     //    val ourNotebook = noteStore.getDefaultNotebook
     val notebooks = notebookList.map { case nb => (nb.getName, nb) }.toMap
-    val ourNotebook = notebooks("sbtb2016")
+    val ourNotebook = notebooks("sbtb2017")
 
     val noteFilterOurNotebook = new NoteFilter()
     noteFilterOurNotebook.setNotebookGuid(ourNotebook.getGuid)
@@ -162,7 +162,7 @@ object Notes {
 
       N.makeNote(noteStore, headline, summary, Some(ourNotebook)) match {
         case Success(note) =>
-          println(s"successfully cteated note [$headline]")
+          println(s"successfully created note [$headline]")
           addTags(note, noteTags)
           (newTags, oldNotes + (headline -> note))
         case Failure(error) =>

@@ -1,4 +1,4 @@
-package io.bythebay.excel
+package fm.wrk.excel
 
 import org.apache.poi.xssf.usermodel.{XSSFCell, XSSFRow}
 

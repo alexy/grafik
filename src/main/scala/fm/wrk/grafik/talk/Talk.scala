@@ -1,6 +1,6 @@
-package io.bythebay.sever.talk
+package fm.wrk.grafik.talk
 
-import io.bythebay.util.sever._
+import fm.wrk.util.grafik._
 
 /**
  * Created by a on 5/26/15.
@@ -100,6 +100,7 @@ object Talk {
   */
 
   // Scala By the Bay 2016
+  /*
   val keys = Map(
     "timestamp" -> "Timestamp",
     "name" -> "Name",
@@ -126,13 +127,47 @@ object Talk {
     "number" -> "Manual",
     "keynote" -> "Keynote"
   )
-
-  val trackTagPrefix = ""
   val trackTags = Map(
     "Scala By the Bay" -> "scala",
     "Big Data Scala By the Bay" -> "pipelines",
     "Twitter OSS" -> "twitter",
     "Startup Technology" -> "startups"
+  )
+  */
+
+  // Scale By the Bay 2017
+  val keys = Map(
+  "timestamp" -> "Timestamp",
+  "email"     -> "Email Address",
+  "name"      -> "Name",
+  "submitter" -> "Acceptance Email address",
+  "photo"     -> "URL of your photo",
+  "twitter"   -> "Twitter Handle",
+  "twitterCompany" -> "Company Twitter Handle",
+  "company"   -> "Your Company",
+  "role"      -> "Role",
+  "tracks"    -> "Which of the Four Conferences are the best fit?",
+  "title"     -> "Talk Title",
+  "abstract"  -> "Talk Abstract",
+  "github"    -> "Talk Github Repo",
+  "datasets"  -> "Talk Datasets",
+  "link1"     -> "Talk Link 1",
+  "link2"     -> "Talk Link 2",
+  "code"      -> "How much code will your talk have?",
+  "data"      -> "How much data are you going to show?",
+  "length"    -> "Talk Duration",
+  "found"     -> "How did you learn about Scala By the Bay?",
+  "partner"   -> "Would your company be a partner of Data By the Bay?",
+  "diversity" -> "Diversity and Community Support",
+  "notes"     -> "Notes for the organizers"
+  )
+
+  val trackTagPrefix = ""
+  val trackTags = Map(
+    "Scala By the Bay"   -> "scala",
+    "Data By the Bay"    -> "data",
+    "Twitter OSS"        -> "twitter",
+    "Rethink.Money"      -> "money"
   )
 
   val lengthTagPrefix = ""
@@ -186,6 +221,7 @@ object Talk {
         println("keys:" + schemaKeys.mkString("\n"))
 
         def position(key: String): Int = schema(keys(key))
+        def positionOpt(key: String): Option[Int] = keys.get(key).flatMap(k => schema.get(k))
 
         try {
           //          val keyPos   = position("key")
@@ -209,8 +245,8 @@ object Talk {
           val tracksPos  = position("tracks")
           val dataPos    = position("data")
           val codePos    = position("code")
-          val numberPos  = position("number")
-          val keynotePos = position("keynote")
+          val numberPosOpt  = positionOpt("number")
+          val keynotePosOpt = positionOpt("keynote")
 
           uniques flatMap { case (line, i) =>
 //            println(line); System.out.flush()
@@ -218,6 +254,10 @@ object Talk {
               val fields: List[String] = line.split("\t").toList.map(xml.Utility.escape)
               val f:  Int => String         = fieldOrEmpty1(fields)
               val fo: Int => Option[String] = fieldOrNone1(fields)
+              val foo: Option[Int] => Option[String] = _ match {
+                case Some(i) => fo(i)
+                case _ => None
+              }
 
               //              val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
 
@@ -236,7 +276,7 @@ object Talk {
                   } //, bio = f(bioPos), photoOpt = fo(optPhotoPos)
                 )
 
-              val keynoteOpt = fo(keynotePos)
+              val keynoteOpt = foo(keynotePosOpt)
 
               val (tags, tagsOther) = {
                 val (t, ta) = resolveTags(trackTags,  trackTagPrefix)(f(tracksPos))
@@ -249,7 +289,7 @@ object Talk {
                   List(ta, la, da, ca) flatMap (identity(_)))
               }
 
-              val number = fo(numberPos).map{ x =>
+              val number = foo(numberPosOpt).map{ x =>
                 val n = x.toInt
                 println(s"MANUAL number: $n")
                 n }.getOrElse(idBase + i + 1)

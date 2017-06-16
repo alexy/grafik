@@ -1,10 +1,10 @@
-package io.bythebay.sever.cards
+package fm.wrk.grafik.cards
 
 import java.io.PrintWriter
 
-import io.bythebay.sever.cards.Plist.{Pint, Pstring, Pbool, Pleaf}
-import io.bythebay.sever.talk.{Talk, Summary}
-import io.bythebay.util.sever.{so,showMaybe,firstInt}
+import fm.wrk.grafik.cards.Plist.{Pint,Pstring, Pbool,Pleaf}
+import fm.wrk.grafik.talk.{Talk, Summary}
+import fm.wrk.util.grafik.{so,showMaybe,firstInt}
 import org.joda.time.{LocalDate, DateTime}
 
 import scala.xml.{Elem, XML}
@@ -212,7 +212,7 @@ case class IndexCard(draft: Boolean = true,
 //                     summary: Option[Summary] = None,
                      id: Option[Int] = None) {
 
-  import io.bythebay.util.sever.RichOptionString
+  import fm.wrk.util.grafik.RichOptionString
 
   def truthXML(cond: Boolean) = if (cond) <true/> else <false/>
   def toXML =

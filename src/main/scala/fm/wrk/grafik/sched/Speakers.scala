@@ -1,9 +1,8 @@
-package io.bythebay.sever.sched
+package fm.wrk.grafik.sched
 
 import java.io.{FileInputStream, FileOutputStream}
 
-import io.bythebay.excel.Implicits._
-import io.bythebay.sever.talk.Talk
+import fm.wrk.grafik.talk.Talk
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 /**
@@ -11,6 +10,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
  */
 object Speakers {
   def main(args: Array[String]): Unit = {
+    import fm.wrk.excel.Implicits._
 
     val dir = "/l/dbtb/data/"
 

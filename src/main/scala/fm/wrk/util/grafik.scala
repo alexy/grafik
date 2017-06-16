@@ -1,9 +1,9 @@
-package io.bythebay.util
+package fm.wrk.util
 
 /**
   * Created by a on 2/14/16.
   */
-package object sever {
+package object grafik {
     val digits = """\D*(\d+).*""".r
     def firstInt(s: String): Option[Int] = digits.unapplySeq(s) match {
         case Some(id::_) => Some(id.toInt)
