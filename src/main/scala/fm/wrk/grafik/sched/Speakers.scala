@@ -12,7 +12,7 @@ object Speakers {
   def main(args: Array[String]): Unit = {
     import fm.wrk.excel.Implicits._
 
-    val dir = "/l/dbtb/data/"
+    val dir = "/data/sbtb2017/"
 
     val files = args.slice(0,3) map (dir+_)
     val talksFile = files(0)
@@ -24,7 +24,7 @@ object Speakers {
 
     val talks = Talk.readFromTSV(talksFile)//.filter(_.key.nonEmpty).sortBy(_.key)
 
-    val speakers = talks map (_.speaker) sortBy (_.name)
+    val speakers = talks map (_.speaker) sortBy (_.name) distinct
 
     speakers foreach println
 

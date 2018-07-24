@@ -384,7 +384,9 @@ object IndexCardProject {
   // /Users/a/Dropbox/IndexCard
   def pathName(name: String) = {
     val user = System.getProperty("user.home")
-    s"$user/Dropbox/IndexCard/${fileName(name)}"
+    val res = s"$user/Dropbox/IndexCard/${fileName(name)}"
+    println(res)
+    res
   }
 
   def apply(name: String, letter: Char, cardsFile: String, talksFile: String, date: LocalDate): IndexCardProject = {

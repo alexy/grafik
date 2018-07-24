@@ -18,7 +18,8 @@ case class Speaker(
       ("name", Some(name)),
       ("email", Some(email)),
       ("company", companyOpt),
-      ("role", roleOpt)
+      ("role", roleOpt),
+      ("photo", photoOpt)
     ).collect{ case (field, Some(text)) => s"$field:\t$text" }
         .mkString("\n")
   }

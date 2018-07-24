@@ -55,4 +55,7 @@ package object grafik {
         }
         if (tags.isEmpty) (List(s"$prefix$default"), Some(tagString)) else (tags, None)
     }
+
+    final val fangSet = " ,.!\t()[]".toSet
+    def defangTag(tin: String): String = tin.filterNot(fangSet)
 }

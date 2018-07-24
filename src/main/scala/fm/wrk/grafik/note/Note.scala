@@ -84,6 +84,10 @@ object Notes {
 
   def main(args: Array[String]): Unit = {
 
+    val dry = false
+    val dryShow = if (dry) "DRY " else ""
+    val onlyNewTalks = true
+
     val talks = Talk.readFromTSV(args(0))
 
     val group = if (args.size > 1) 1 else 0
@@ -99,7 +103,7 @@ object Notes {
 
     //    val ourNotebook = noteStore.getDefaultNotebook
     val notebooks = notebookList.map { case nb => (nb.getName, nb) }.toMap
-    val ourNotebook = notebooks("sbtb2017")
+    val ourNotebook = notebooks("sbtb2018")
 
     val noteFilterOurNotebook = new NoteFilter()
     noteFilterOurNotebook.setNotebookGuid(ourNotebook.getGuid)
@@ -107,6 +111,10 @@ object Notes {
     val noteList: List[Note] = noteStore.findNotes(noteFilterOurNotebook, 0, 1000).getNotes.toList
 
     val allNotes: Map[String, Note] = noteList.map { case note => (note.getTitle, note) }.toMap
+
+    allNotes foreach { case (title, note) =>
+        println(title)
+    }
 
     val allTags = noteStore.listTags().toList.map { case t => (t.getName, t) }.toMap
     val ourTags = noteStore.listTagsByNotebook(ourNotebook.getGuid).toList.map { case t => (t.getName, t) }.toMap
@@ -116,8 +124,14 @@ object Notes {
       println("\t" + tag)
     }
 
+    // DANGER!  use this to clear all tags in the notebook!
+//    noteStore.listTagsByNotebook(ourNotebook.getGuid).toList.map { case t =>
+//        println(s"expunging tag ${t.getName}")
+//        DONT! noteStore.expungeTag(t.getGuid())
+//    }
+
     talks
-//            .take(1)
+//            .take(3)
       //        .drop(100)
       .foldLeft((allTags, allNotes)) { case ((oldTags, oldNotes), talk) =>
       //      val title = TalkTitle(1, "John Smith")
@@ -128,11 +142,11 @@ object Notes {
         val (nt, t) = allTags.get(tag) match {
           case Some(t) => (allTags, t)
           case _ => // create a new tag
-            println(s"creating tag $tag")
+            println(s"$dryShow creating tag $tag")
             val t = new Tag()
             t.setName(tag)
-            noteStore.createTag(t)
-            println(s"created new TAG ${t.getName}")
+            if (!dry) noteStore.createTag(t)
+            println(s"$dryShow created new TAG ${t.getName}")
             (allTags + (tag -> t), t)
         }
         (nt, noteTags :+ t)
@@ -147,27 +161,47 @@ object Notes {
           note.addToTagNames(t.getName)
           print("  " + t.getName)
         }
-        noteStore.updateNote(note)
+        if (!dry) noteStore.updateNote(note)
         println()
       }
 
       // TODO instead of deleting the old note outright,
       // we could just update the text, title, and tags
-      oldNotes.get(headline) match {
-        case Some(n) =>
-          noteStore.deleteNote(n.getGuid)
-          println(s"deleting previous version of the note [$headline]")
-        case _ =>
-      }
 
-      N.makeNote(noteStore, headline, summary, Some(ourNotebook)) match {
-        case Success(note) =>
-          println(s"successfully created note [$headline]")
-          addTags(note, noteTags)
-          (newTags, oldNotes + (headline -> note))
-        case Failure(error) =>
-          println(s"FAILED to create a note with TITLE $headline because of $error")
+      val prevNoteOpt = oldNotes.get(headline)
+      prevNoteOpt match {
+        case Some(n) if onlyNewTalks =>
+          println(s"not a new talk, skipping [$headline]")
           (oldTags, oldNotes)
+        case _ =>
+//          prevNoteOpt match {
+//            case Some(n) =>
+//              if (!dry) noteStore.deleteNote(n.getGuid)
+//              println(s"$dryShow deleting previous version of the note [$headline]")
+//            case _ =>
+//          }
+
+          if (talk.id <= 142) {
+            println(s"skipping low-numbered talk [$headline]")
+            (oldTags, oldNotes)
+          }
+          else {
+
+            println(s"$dryShow creating note [$headline]")
+            if (dry)
+              (oldTags, oldNotes)
+            else {
+              N.makeNote(noteStore, headline, summary, Some(ourNotebook)) match {
+                case Success(note) =>
+                  println(s"successfully created note [$headline]")
+                  addTags(note, noteTags)
+                  (newTags, oldNotes + (headline -> note))
+                case Failure(error) =>
+                  println(s"FAILED to create a note with TITLE $headline because of $error")
+                  (oldTags, oldNotes)
+              }
+            }
+          }
       }
     }
   }

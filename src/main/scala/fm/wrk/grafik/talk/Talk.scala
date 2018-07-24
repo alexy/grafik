@@ -135,7 +135,7 @@ object Talk {
   )
   */
 
-  // Scale By the Bay 2017
+  // Scale By the Bay 2018
   val keys = Map(
   "timestamp" -> "Timestamp",
   "email"     -> "Email Address",
@@ -146,7 +146,7 @@ object Talk {
   "twitterCompany" -> "Company Twitter Handle",
   "company"   -> "Your Company",
   "role"      -> "Role",
-  "tracks"    -> "Which of the Four Conferences are the best fit?",
+  "tracks"    -> "Which of the three tracks is the best fit?",
   "title"     -> "Talk Title",
   "abstract"  -> "Talk Abstract",
   "github"    -> "Talk Github Repo",
@@ -156,19 +156,20 @@ object Talk {
   "code"      -> "How much code will your talk have?",
   "data"      -> "How much data are you going to show?",
   "length"    -> "Talk Duration",
-  "found"     -> "How did you learn about Scala By the Bay?",
-  "partner"   -> "Would your company be a partner of Data By the Bay?",
+  "found"     -> "How did you learn about Scale By the Bay?",
+  "partner"   -> "Would your company be a partner of Scale By the Bay?",
   "diversity" -> "Diversity and Community Support",
   "notes"     -> "Notes for the organizers"
   )
 
+
   val trackTagPrefix = ""
   val trackTags = Map(
-    "Scala By the Bay"   -> "scala",
-    "Data By the Bay"    -> "data",
-    "Twitter OSS"        -> "twitter",
-    "Rethink.Money"      -> "money"
+    "Functional Programming"   -> "fp",
+    "Reactive Microservices"    -> "reative",
+    "End-to-end Data Pipelines (optionally with ML/AI)"        -> "data"
   )
+
 
   val lengthTagPrefix = ""
   val lengthTags = Map(
@@ -182,8 +183,7 @@ object Talk {
     "Showing proprietary data, lots of it" -> "proprietary",
     "Showing lots of data summaries" -> "summaries",
     "Generally alluding to &quot;data in the cloud&quot;" -> "cloud",
-    "It's not a data talk actually, data structures are enough" -> "not",
-    "Not a data focused talk" -> "not"
+    "It's not a data talk actually, data structures are enough" -> "not"
   )
 
   val codeTagPrefix = "code-"
@@ -193,6 +193,8 @@ object Talk {
     "Code on slides" -> "slides",
     "Making curly braces in the air with hand waves" -> "air"
   )
+
+  val companyTagPrefix = "company-"
 
   // TODO create sidecar duplicate line file for the main talks.tsv, or mark them in a column
   val duplicates = List[List[Int]]() // List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
@@ -218,34 +220,35 @@ object Talk {
         val schemaKeys = schemaRow.split("\t") :+ "Manual" :+ "Keynote"
         val schema = schemaKeys.zipWithIndex.toMap
 
-        println("keys:" + schemaKeys.mkString("\n"))
+//        println("keys:" + schemaKeys.mkString("\n"))
 
         def position(key: String): Int = schema(keys(key))
         def positionOpt(key: String): Option[Int] = keys.get(key).flatMap(k => schema.get(k))
 
         try {
           //          val keyPos   = position("key")
-          val namePos    = position("name")
-          val emailPos   = position("email")
+          val namePos    = position("name"); println("namePos:" + namePos)
+          val emailPos   = position("email"); println("emailPos:" + emailPos)
 
           //          val optCompanyPos = tryKeys(schema)(List("Company and role", "Current company and role")) // optional in key, value, field
-          val companyPos = position("company")
-          val rolePos    = position("role")
+          val companyPos = position("company"); println("companyPos:" + companyPos)
+          val rolePos    = position("role"); println("rolePos:" + rolePos)
+          val photoPos   = position("photo"); println("photoPos:" + photoPos)
 
-          val twitterPos = position("twitter")
+          val twitterPos = position("twitter"); println("twitterPos:" + twitterPos)
 
-          val titlePos   = position("title")
-          val bodyPos    = position("abstract")
-          val lengthPos  = position("length")
+          val titlePos   = position("title"); println("titlePos:" + titlePos)
+          val bodyPos    = position("abstract"); println("bodyPos:" + bodyPos)
+          val lengthPos  = position("length"); println("lengthPos:" + lengthPos)
 
           //          val optTwitterPos = schema("Speaker's Twitter handle")
           //          val bioPos        = schema("Speaker Bio")
           //          val optPhotoPos   = schema("Speaker Photo")
 
-          val tracksPos  = position("tracks")
-          val dataPos    = position("data")
-          val codePos    = position("code")
-          val numberPosOpt  = positionOpt("number")
+          val tracksPos  = position("tracks"); println("tracksPos:" + tracksPos)
+          val dataPos    = position("data"); println("dataPos:" + dataPos)
+          val codePos    = position("code"); println("codePos:" + codePos)
+          val numberPosOpt  = positionOpt("number");
           val keynotePosOpt = positionOpt("keynote")
 
           uniques flatMap { case (line, i) =>
@@ -260,13 +263,15 @@ object Talk {
               }
 
               //              val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
+              val companyOpt = fo(companyPos)
 
               val speaker =
                 Speaker(
                   name       = f(namePos),
                   email      = f(emailPos),
-                  companyOpt = fo(companyPos),
+                  companyOpt = companyOpt,
                   roleOpt    = fo(rolePos),
+                  photoOpt   = fo(photoPos),
                   twitterOpt = fo(twitterPos).map { s =>
                     s.toList match {
                       case '@' :: _ => s
@@ -285,7 +290,12 @@ object Talk {
                 val (d, da) = resolveTags(dataTags,   dataTagPrefix)(f(dataPos))
                 val (c, ca) = resolveTags(codeTags,   codeTagPrefix)(f(codePos))
 
-                (t ++ l ++ d ++ c ++ keynoteOpt.toList,
+                val companyTag = companyOpt.map {
+                  case c => val normC = defangTag(c).toLowerCase
+                  s"$companyTagPrefix$normC"
+                }
+
+                (t ++ l ++ d ++ c ++ companyTag.toList ++ keynoteOpt.toList,
                   List(ta, la, da, ca) flatMap (identity(_)))
               }
 
@@ -296,7 +306,7 @@ object Talk {
               val title = f(titlePos)
               val body  = f(bodyPos)
 
-              println("title: " + title)
+//              println("title: " + title)
 
               val headline = Headline(number, speaker.name)
 

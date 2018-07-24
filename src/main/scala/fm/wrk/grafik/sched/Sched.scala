@@ -85,7 +85,7 @@ object Sched {
 
   }
   object Params {
-    val dir = "/l/dbtb/data/"
+    val dir = "/data/sbtb2017/"
 
     def apply(args: Array[String]): Params = {
       val letters = args(5).toCharArray
@@ -95,7 +95,7 @@ object Sched {
 
       new Params(
         talksFile  = dir + args(0),
-        fromDay    = new LocalDate(args(1)),
+        fromDay    = new LocalDate(args(1)), // 2017-11-16
         toDay      = new LocalDate(args(2)),
         excelIn    = dir + args(3),
         excelOut   = dir + args(4),
@@ -106,12 +106,13 @@ object Sched {
   }
 
   def main(args: Array[String]): Unit = {
+    import fm.wrk.grafik.cards.IndexCardProject.{pathName=>cardPathName}
 
     val par = Params(args)
 
-    println(s"reading talks from ${par.talksFile}, sessions from ${par.excelIn}, writing ${par.excelOut}, days: " + par.cardFiles.mkString(", "))
+    println(s"reading talks from ${par.talksFile}, sessions from ${par.excelIn}, writing ${par.excelOut}, day letters: ${par.dayLetters.mkString(";")}, days: " + par.cardFiles.mkString(", "))
 
-    val rowBase = 8 // for 0-based row increments
+    val rowBase = 9 // for 0-based row increments
     val excelSched = new ExcelSched(par.excelIn, rowBase)
 
     val dates = (0 to new Period(par.fromDay, par.toDay).getDays) map (par.fromDay.plusDays(_))
@@ -120,7 +121,7 @@ object Sched {
       val cardProject = IndexCardProject(
         name      = cardFile,
         letter    = letter,
-        cardsFile = s"${Params.dir}$cardFile.indexcard",
+        cardsFile = cardPathName(cardFile), // s"${Params.dir}$cardFile.indexcard",
         talksFile = par.talksFile,
         date      = date
       )
@@ -129,8 +130,9 @@ object Sched {
         excelSched.talkRow(scheduledTalk, base + i)
       }
 
-      base + cardProject.schedule.size
-
+      val newBase = base + cardProject.schedule.size
+      println(s"base: $newBase")
+      newBase
     }
     excelSched.write(par.excelOut)
   }
