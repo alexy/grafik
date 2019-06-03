@@ -199,7 +199,7 @@ object Talk {
   // TODO create sidecar duplicate line file for the main talks.tsv, or mark them in a column
   val duplicates = List[List[Int]]() // List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
 
-  def readFromTSV(filename: String, idBase: Int = 0, dedup: Boolean = false): List[Talk] = {
+  def readFromTSV(filename: String, idPresent: Boolean = false, idBase: Int = 0, dedup: Boolean = false): List[Talk] = {
     scala.io.Source.fromFile(filename).getLines().toList match {
       case schemaRow :: lines =>
 
@@ -296,13 +296,21 @@ object Talk {
                 }
 
                 (t ++ l ++ d ++ c ++ companyTag.toList ++ keynoteOpt.toList,
-                  List(ta, la, da, ca) flatMap (identity(_)))
+                  List(ta, la, da, ca).flatten)
               }
 
               val number = foo(numberPosOpt).map{ x =>
                 val n = x.toInt
                 println(s"MANUAL number: $n")
-                n }.getOrElse(idBase + i + 1)
+                n } getOrElse {
+                if (idPresent) {
+                  val n = fields.last.toInt
+                  println(s"SUFFIX id: $n")
+                  n
+                }
+                else
+                  idBase + i + 1
+              }
               val title = f(titlePos)
               val body  = f(bodyPos)
 

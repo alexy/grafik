@@ -570,11 +570,12 @@ object CreateOneProject {
     val talkFileName = args(0)
     val cardFileName = args(1)
     val letter       = args(2)(0)
-    val idBase       = args(3).toInt
+//    val idBase       = args(3).toInt
+    val idPresent = args.length > 3
 
     println(s"creating a project $cardFileName from $talkFileName, letter $letter")
 
-    val talks = Talk.readFromTSV(talkFileName, idBase)
+    val talks = Talk.readFromTSV(talkFileName, idPresent=idPresent)
 
     val cards = talks.zipWithIndex map { case (talk, i) => IndexCard(talk.summary, i) }
     val cardProject = IndexCardProject(cardFileName, letter, cards, Nil, talkFileName,

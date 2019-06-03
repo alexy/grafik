@@ -76,13 +76,11 @@ object N {
 
 object Notes {
 
-  val env = "prod" // "dev" or "prod"
-
-  val developerToken: String = readStringMapFromTSV("devtoken.tsv")(env)
-
-  println("devtoken: " + developerToken)
+  import ReadNotes.{noteStore, allTags}
 
   def main(args: Array[String]): Unit = {
+
+    val ourNotebookName = args(1)
 
     val dry = false
     val dryShow = if (dry) "DRY " else ""
@@ -92,23 +90,8 @@ object Notes {
 
     val group = if (args.size > 1) 1 else 0
 
-    // Set up the NoteStore client
-    val evernoteAuth = new EvernoteAuth(EvernoteService.PRODUCTION, developerToken)
-    val factory = new ClientFactory(evernoteAuth)
-    val noteStore = factory.createNoteStoreClient()
-
-    // Make API calls, passing the developer token as the authenticationToken param
-    val notebookList = noteStore.listNotebooks().toList
-    //    notebooks foreach { case nb => println("Notebook: " + nb.getName)}
-
-    //    val ourNotebook = noteStore.getDefaultNotebook
-    val notebooks = notebookList.map { case nb => (nb.getName, nb) }.toMap
-    val ourNotebook = notebooks("sbtb2018")
-
-    val noteFilterOurNotebook = new NoteFilter()
-    noteFilterOurNotebook.setNotebookGuid(ourNotebook.getGuid)
-
-    val noteList: List[Note] = noteStore.findNotes(noteFilterOurNotebook, 0, 1000).getNotes.toList
+    val (noteList, ourTags, ourNotebookOpt): (List[Note], Map[String, Tag], Option[Notebook])=
+      ReadNotes.getAllNotebookNotes(ourNotebookName)
 
     val allNotes: Map[String, Note] = noteList.map { case note => (note.getTitle, note) }.toMap
 
@@ -116,10 +99,8 @@ object Notes {
         println(title)
     }
 
-    val allTags = noteStore.listTags().toList.map { case t => (t.getName, t) }.toMap
-    val ourTags = noteStore.listTagsByNotebook(ourNotebook.getGuid).toList.map { case t => (t.getName, t) }.toMap
 
-    println(s"Tags in the notebook ${ourNotebook.getName}:")
+    println(s"Tags in the notebook ${ourNotebookName}:")
     ourTags.keys foreach { case tag =>
       println("\t" + tag)
     }
@@ -191,7 +172,7 @@ object Notes {
             if (dry)
               (oldTags, oldNotes)
             else {
-              N.makeNote(noteStore, headline, summary, Some(ourNotebook)) match {
+              N.makeNote(noteStore, headline, summary, ourNotebookOpt) match {
                 case Success(note) =>
                   println(s"successfully created note [$headline]")
                   addTags(note, noteTags)

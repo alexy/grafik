@@ -58,10 +58,15 @@ class ExcelSched(excelIn: String, rowBase: Int)
 
     val track = st.key.track.toString // Char gets uploaded as an integer
 
-    r.createCellA('f').setCellValue(track)
+    val label = track match {
+      case "f" => "functional"
+      case "r" => "reactive"
+      case "d" => "data"
+    }
+    r.createCellA('f').setCellValue(label)
     r.createCellA('i').setCellValue(st.talk.map(_.body).show)
     r.createCellA('j').setCellValue(st.talk.map(_.speaker.name).show)
-    r.createCellA('p').setCellValue(track) // venue same as track for now
+    r.createCellA('o').setCellValue(label) // venue same as track for now
   }
 
   def write(excelOut: String): Unit = {
@@ -85,7 +90,7 @@ object Sched {
 
   }
   object Params {
-    val dir = "/data/sbtb2017/"
+    val dir = "/data/sbtb2018/"
 
     def apply(args: Array[String]): Params = {
       val letters = args(5).toCharArray

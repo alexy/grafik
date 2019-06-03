@@ -1,72 +1,7 @@
 package fm.wrk.grafik.note
 
-import fm.wrk.util.grafik.readStringMapFromTSV
-import com.evernote.auth.{EvernoteAuth, EvernoteService}
-import com.evernote.clients.ClientFactory
-import com.evernote.edam.`type`.{Note, Notebook, Tag}
-import com.evernote.edam.error.{EDAMNotFoundException, EDAMUserException}
-import com.evernote.edam.notestore.NoteFilter
-import fm.wrk.grafik.talk.{Summary, Talk}
-
-import scala.collection.JavaConversions._
-import scala.util.{Failure, Success, Try}
 import java.io.{BufferedWriter, File, FileWriter}
 
-
-/**
-  * Created by alexy on 7/24/18.
-  */
-
-object ReadNotes {
-
-  val env = "prod" // "dev" or "prod"
-
-  val developerToken: String = readStringMapFromTSV("devtoken.tsv")(env)
-
-  println("devtoken: " + developerToken)
-
-
-  // Set up the NoteStore client
-  val evernoteAuth = new EvernoteAuth(EvernoteService.PRODUCTION, developerToken)
-  val factory = new ClientFactory(evernoteAuth)
-  val noteStore = factory.createNoteStoreClient()
-
-  // Make API calls, passing the developer token as the authenticationToken param
-  val notebookList = noteStore.listNotebooks().toList
-  //    notebooks foreach { case nb => println("Notebook: " + nb.getName)}
-
-  //    val ourNotebook = noteStore.getDefaultNotebook
-  val notebooks = notebookList.map { case nb => (nb.getName, nb) }.toMap
-
-  def getAllNotebookNotes(ourNotebookName: String): List[Note] = {
-    val ourNotebook = notebooks(ourNotebookName)
-
-    val noteFilterOurNotebook = new NoteFilter()
-    noteFilterOurNotebook.setNotebookGuid(ourNotebook.getGuid)
-
-    val batchSize = 50 // Evernote fetches only up to 50 notes!
-
-    def fetchPaginated(noteFilter: NoteFilter, batchSize: Int, maxNotes: Int = 100)(offset: Int, acc: List[Note] = Nil): List[Note] = {
-      println(s"fetching notes for offset $offset")
-      val chunk = noteStore.findNotes(noteFilterOurNotebook, offset, batchSize).getNotes.toList
-      if (chunk.length == 0) acc
-      val newAcc = acc ++ chunk
-      if (newAcc.length >= maxNotes) newAcc
-      if (chunk.length == batchSize) {
-        fetchPaginated(noteFilter, maxNotes)(offset + batchSize, newAcc)
-      }
-      else
-        newAcc
-    }
-
-    val noteList: List[Note] = fetchPaginated(noteFilterOurNotebook, batchSize)(0)
-
-    println(s"${noteList.length} notes in notebook $ourNotebookName")
-
-    noteList
-  }
-
-}
 object Accepted {
 
     def main(args: Array[String]): Unit = {
@@ -77,7 +12,7 @@ object Accepted {
 
       val talkLines = scala.io.Source.fromFile(talksFile).getLines().toList.zipWithIndex.map(_.swap).toMap
 
-      val noteList = ReadNotes.getAllNotebookNotes(acceptedNotebook)
+      val (noteList, _, _) = ReadNotes.getAllNotebookNotes(acceptedNotebook)
 
       val noteTitleIdOpt = noteList map { case note =>
         val title = note.getTitle
@@ -108,7 +43,7 @@ object Accepted {
 
       noteTitleId foreach { case (title, id) =>
         println(s"[$id] => $title")
-        bw.write(s"$id: ${talkLines(id)}\n")
+        bw.write(s"${talkLines(id)}\t$id\n")
       }
       bw.close()
     }
