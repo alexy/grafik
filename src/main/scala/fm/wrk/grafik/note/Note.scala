@@ -84,6 +84,7 @@ object Notes {
 
     val dry = false
     val dryShow = if (dry) "DRY " else ""
+    val skipLowTalksOpt: Option[Int] = None // Some(142)
     val onlyNewTalks = true
 
     val talks = Talk.readFromTSV(args(0))
@@ -154,35 +155,36 @@ object Notes {
         case Some(n) if onlyNewTalks =>
           println(s"not a new talk, skipping [$headline]")
           (oldTags, oldNotes)
-        case _ =>
-//          prevNoteOpt match {
-//            case Some(n) =>
-//              if (!dry) noteStore.deleteNote(n.getGuid)
-//              println(s"$dryShow deleting previous version of the note [$headline]")
-//            case _ =>
-//          }
+        case _ => {
+          //          prevNoteOpt match {
+          //            case Some(n) =>
+          //              if (!dry) noteStore.deleteNote(n.getGuid)
+          //              println(s"$dryShow deleting previous version of the note [$headline]")
+          //            case _ =>
+          //          }
 
-          if (talk.id <= 142) {
-            println(s"skipping low-numbered talk [$headline]")
-            (oldTags, oldNotes)
-          }
-          else {
-
-            println(s"$dryShow creating note [$headline]")
-            if (dry)
+          skipLowTalksOpt match {
+            case Some(low) if talk.id <= low =>
+              println(s"skipping low-numbered talk [$headline]")
               (oldTags, oldNotes)
-            else {
-              N.makeNote(noteStore, headline, summary, ourNotebookOpt) match {
-                case Success(note) =>
-                  println(s"successfully created note [$headline]")
-                  addTags(note, noteTags)
-                  (newTags, oldNotes + (headline -> note))
-                case Failure(error) =>
-                  println(s"FAILED to create a note with TITLE $headline because of $error")
-                  (oldTags, oldNotes)
+
+            case _ =>
+              println(s"$dryShow creating note [$headline]")
+              if (dry)
+                (oldTags, oldNotes)
+              else {
+                N.makeNote(noteStore, headline, summary, ourNotebookOpt) match {
+                  case Success(note) =>
+                    println(s"successfully created note [$headline]")
+                    addTags(note, noteTags)
+                    (newTags, oldNotes + (headline -> note))
+                  case Failure(error) =>
+                    println(s"FAILED to create a note with TITLE $headline because of $error")
+                    (oldTags, oldNotes)
+                }
               }
-            }
           }
+        }
       }
     }
   }

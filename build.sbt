@@ -2,7 +2,7 @@ name := "grafik"
 
 organization := "fm.wrk"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.12.8"
 
 libraryDependencies ++= Seq(
     "com.evernote" % "evernote-api" % "1.25.1"

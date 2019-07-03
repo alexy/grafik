@@ -12,7 +12,7 @@ object Speakers {
   def main(args: Array[String]): Unit = {
     import fm.wrk.excel.Implicits._
 
-    val dir = "/data/sbtb2018/"
+    val dir = "/data/sbtb2019/"
 
     val files = args.slice(0,3) map (dir+_)
     val talksFile = files(0)
