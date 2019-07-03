@@ -136,7 +136,7 @@ object Talk {
   */
 
   // Scale By the Bay 2018
-  val keys = Map(
+/*  val keys = Map(
   "timestamp" -> "Timestamp",
   "email"     -> "Email Address",
   "name"      -> "Name",
@@ -161,7 +161,83 @@ object Talk {
   "diversity" -> "Diversity and Community Support",
   "notes"     -> "Notes for the organizers"
   )
+*/
 
+  // SBTB 2019
+  // -Timestamp
+  // -Email Address
+  // -Name
+  // -Acceptance Email address
+  // -Conference Day Contact Phone
+  // -URL of your photo
+  // -Twitter Handle
+  // -Company Twitter Handle
+  // -Have you been a speaker By the Bay?
+  // -Which Meetup talks did you give
+  // -Your Facebook URL
+  // -Your Company Facebook URL
+  // -Your LinkedIn URL
+  // -Your Company LinkedIn URL
+  // -Your Company
+  // -Role
+  // Bio
+  // Optional Co-Presenter Name
+  // Optional Co-Presenter Email
+  // Optional Co-Presenter Company
+  // Optional Co-Presenter Role
+  // -Which of the three tracks is the best fit?
+  // -Talk Title
+  // -Talk Abstract
+  // -Talk Github Repo
+  // -Talk Datasets
+  // -Talk Link 1
+  // -Talk Link 2
+  // -How much code will your talk have?
+  // -How much data are you going to show?
+  // -Talk Duration
+  // -How did you learn about Scale By the Bay?
+  // -Would your company be a partner of Scale By the Bay?
+  // -Diversity and Community Support
+  // -Notes for the organizers
+
+  // Scale By the Bay 2019
+  val keys = Map(
+    "timestamp" -> "Timestamp",
+    "email"     -> "Email Address",
+    "name"      -> "Name",
+    "submitter" -> "Acceptance Email address",
+    "phone"     -> "Conference Day Contact Phone",
+    "photo"     -> "URL of your photo",
+    "twitter"   -> "Twitter Handle",
+    "twitterCompany" -> "Company Twitter Handle",
+    "wasSpeaker" -> "Have you been a speaker By the Bay?",
+    "meetups"   -> "Which Meetup talks did you give",
+    "facebook"  -> "Your Facebook URL",
+    "facebook"  -> "Your Company Facebook URL",
+    "linkedin"  -> "Your LinkedIn URL",
+    "linkedin"  -> "Your Company LinkedIn URL",
+    "company"   -> "Your Company",
+    "role"      -> "Role",
+    "bio"       -> "Bio",
+    "coName"    -> "Optional Co-Presenter Name",
+    "coEmail"   -> "Optional Co-Presenter Email",
+    "coCompany" -> "Optional Co-Presenter Company",
+    "coRole"    -> "Optional Co-Presenter Role",
+    "tracks"    -> "Which of the three tracks is the best fit?",
+    "title"     -> "Talk Title",
+    "abstract"  -> "Talk Abstract",
+    "github"    -> "Talk Github Repo",
+    "datasets"  -> "Talk Datasets",
+    "link1"     -> "Talk Link 1",
+    "link2"     -> "Talk Link 2",
+    "code"      -> "How much code will your talk have?",
+    "data"      -> "How much data are you going to show?",
+    "length"    -> "Talk Duration",
+    "found"     -> "How did you learn about Scale By the Bay?",
+    "partner"   -> "Would your company be a partner of Scale By the Bay?",
+    "diversity" -> "Diversity and Community Support",
+    "notes"     -> "Notes for the organizers"
+  )
 
   val trackTagPrefix = ""
   val trackTags = Map(
