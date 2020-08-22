@@ -348,20 +348,21 @@ object Talk {
       case schemaRow :: lines =>
 
 //      println(schemaRow)
+        val numberedLines = lines.zipWithIndex
         val lineOffset = 2 // header line and 0-based zipWithIndex
         
         val dropLines: Set[Int] = if (dedup)
             duplicates.map(_.dropRight(1)).reduce(_++_).map(_-lineOffset).toSet
           else Set.empty
-        val (dropped, uniques) = lines.zipWithIndex.partition{ case (_,number) => dropLines.contains(number) }
+        val (dropped, uniques) = numberedLines.partition{ case (_,number) => dropLines.contains(number) }
 //        dropped foreach { case (line, number) => println(s"DROP LINE ${number+lineOffset}: $line") }
           println(s"dropped ${dropped.size} duplicate lines")
         val talkLines = onlyRowsOpt match {
           case Some(rows) => 
             // talks are numbered 1-based in Evernote, 0-based in lines 
             val rowSet = rows.map(_-1).toSet
-            val (keep, leftOut) = lines.zipWithIndex.partition{ case (_,number) => rowSet.contains(number) }
-            println(s"left out ${leftOut.size} talks, kept ${keep.size}")
+            val (keep, leftOut) = uniques.partition{ case (_,number) => rowSet.contains(number) }
+            println(s"kept ${keep.size} talks, left out ${leftOut.size}")
             keep
           case _ => uniques
         } 
@@ -469,7 +470,7 @@ object Talk {
               val title = f(titlePos)
               val body  = f(bodyPos)
 
-             println("title: " + title)
+             println(number + " => " + title)
 
               val headline = Headline(number, speaker.name)
 
@@ -550,7 +551,7 @@ object ShowTalks {
         // val tags = t.tags.mkString(";")
         // val tagsOther = t.tagsOther.mkString(";")
         // println(s"tags: $tags ... other: $tagsOther")
-        println(t.title)
+        println(s"${t.id}: ${t.title}")
     }
   }
 }
