@@ -78,20 +78,28 @@ object Notes {
 
   import ReadNotes.{noteStore, allTags}
 
-  def main(args: Array[String]): Unit = {
+  def main(rawArgs: Array[String]): Unit = {
 
+    val dryFlag = "dry"
+    val dry = rawArgs.contains(dryFlag)
+
+    val (args, dryShow) = if (dry) 
+      (rawArgs.filter(_ != dryFlag) , "DRY ") 
+    else (rawArgs, "")
+
+    val talksFile       = args(0)
     val ourNotebookName = args(1)
 
-    val dry = false
-    val dryShow = if (dry) "DRY " else ""
+    println("this is a "+dryShow+ "run, reading from " +talksFile+ " and uploading to notebook " +ourNotebookName)
+
     val skipLowTalksOpt: Option[Int] = None // Some(142)
     val onlyNewTalks = true
 
-    val talks = Talk.readFromTSV(args(0))
+    val talks = Talk.readFromTSV(talksFile)
 
     val group = if (args.size > 1) 1 else 0
 
-    val (noteList, ourTags, ourNotebookOpt): (List[Note], Map[String, Tag], Option[Notebook])=
+    val (noteList, ourTags, ourNotebookOpt): (List[Note], Map[String, Tag], Option[Notebook]) =
       ReadNotes.getAllNotebookNotes(ourNotebookName)
 
     val allNotes: Map[String, Note] = noteList.map { case note => (note.getTitle, note) }.toMap

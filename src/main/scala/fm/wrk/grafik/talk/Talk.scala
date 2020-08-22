@@ -1,6 +1,9 @@
 package fm.wrk.grafik.talk
 
 import fm.wrk.util.grafik._
+import fm.wrk.enex._
+import com.lucidchart.open.xtract.{ParseSuccess, XmlReader}
+import scala.xml.XML
 
 /**
  * Created by a on 5/26/15.
@@ -200,6 +203,46 @@ object Talk {
   // -Diversity and Community Support
   // -Notes for the organizers
 
+  // SBTB 2020
+  // Timestamp  
+  // Email Address 
+  // Name  
+  // Acceptance Email address  
+  // Conference Day Contact Phone  
+  // URL of your photo 
+  // Twitter Handle  
+  // Company Twitter Handle  
+  // Have you been a speaker By the Bay? 
+  // Which Meetup talks did you give 
+  // Your Facebook URL 
+  // Your Company Facebook URL 
+  // Your LinkedIn URL 
+  // Your Company LinkedIn URL 
+  // Your Company 
+  // Role  
+  // Bio 
+  // Optional Co-Presenter Name  
+  // Optional Co-Presenter Email 
+  // Optional Co-Presenter Company 
+  // Optional Co-Presenter Role                    
+  //          NB: add bio!
+  // Which of the three tracks is the best fit?  
+  // Talk Title  
+  // Talk Abstract 
+  // Talk Github Repo  
+  // Talk Datasets 
+  // Talk Link 1 
+  // Talk Link 2 
+  // How much code will your talk have?  
+  // How much data are you going to show?  
+  // Acceptable Talk Duration  
+  // Preferred Talk Duration 
+  // How did you learn about Scale By the Bay? 
+  // Would your company be a partner of Scale By the Bay? 
+  // Diversity and Community Support 
+  // Notes for the organizers            
+
+
   // Scale By the Bay 2019
   val keys = Map(
     "timestamp" -> "Timestamp",
@@ -232,7 +275,8 @@ object Talk {
     "link2"     -> "Talk Link 2",
     "code"      -> "How much code will your talk have?",
     "data"      -> "How much data are you going to show?",
-    "length"    -> "Talk Duration",
+    "acceptableLength"  -> "Acceptable Talk Duration",
+    "preferredLength"   -> "Preferred Talk Duration",
     "found"     -> "How did you learn about Scale By the Bay?",
     "partner"   -> "Would your company be a partner of Scale By the Bay?",
     "diversity" -> "Diversity and Community Support",
@@ -241,16 +285,19 @@ object Talk {
 
   val trackTagPrefix = ""
   val trackTags = Map(
-    "Functional Programming"   -> "fp",
-    "Reactive Microservices"    -> "reative",
-    "End-to-end Data Pipelines (optionally with ML/AI)"        -> "data"
+    "Functional Programming"                             -> "fp",
+    "Reactive/Cloud-Native Applications"                 -> "reactive",
+    "End-to-end Data Pipelines (optionally with ML/AI)"  -> "data"
   )
 
 
-  val lengthTagPrefix = ""
+  val acceptableLengthTagPrefix = "a"
+  val preferredLengthTagPrefix  = "p"
   val lengthTags = Map(
+    "20 minutes" -> "20",
+    "30 minutes" -> "30",
     "40 minutes" -> "40",
-    "20 minutes" -> "20"
+    "60 minutes" -> "60"
   )
 
   val dataTagPrefix = "data-"
@@ -275,28 +322,58 @@ object Talk {
   // TODO create sidecar duplicate line file for the main talks.tsv, or mark them in a column
   val duplicates = List[List[Int]]() // List(List(7,8),List(15,128),List(24,25),List(37,38),List(102,117))
 
-  def readFromTSV(filename: String, idPresent: Boolean = false, idBase: Int = 0, dedup: Boolean = false): List[Talk] = {
+  def readFromTSV(filename: String, idPresent: Boolean = false, idBase: Int = 0, dedup: Boolean = false, acceptedFileOpt: Option[String] = None): List[Talk] = {
+    val onlyRowsOpt: Option[Seq[Int]] = acceptedFileOpt match { 
+      case Some(enexFilename) => 
+        println("reading Evernote export from file " +enexFilename+ ", selecting only the talks contained in it")
+
+        val xml = XML.loadFile(enexFilename)
+        val parsedEnex = XmlReader.of[Enex].read(xml)
+
+        parsedEnex match {
+          case ParseSuccess(s) => // println(s.taggedOnly)
+              val RowNumber = "([0-9]+): .*".r
+              val ns = s.notes.notes.map(_.title).collect { 
+                // println("++" +title)
+                _ match { case RowNumber(n) => n }
+              } map(_.toInt)
+              Some(ns.sorted)
+          case _ => None
+          }
+      case _ => None
+      }
+
+
     scala.io.Source.fromFile(filename).getLines().toList match {
       case schemaRow :: lines =>
 
+//      println(schemaRow)
         val lineOffset = 2 // header line and 0-based zipWithIndex
+        
         val dropLines: Set[Int] = if (dedup)
             duplicates.map(_.dropRight(1)).reduce(_++_).map(_-lineOffset).toSet
           else Set.empty
-
         val (dropped, uniques) = lines.zipWithIndex.partition{ case (_,number) => dropLines.contains(number) }
-
 //        dropped foreach { case (line, number) => println(s"DROP LINE ${number+lineOffset}: $line") }
-          println(s"dropped ${dropped.size} lines")
-//        println(schemaRow)
+          println(s"dropped ${dropped.size} duplicate lines")
+        val talkLines = onlyRowsOpt match {
+          case Some(rows) => 
+            // talks are numbered 1-based in Evernote, 0-based in lines 
+            val rowSet = rows.map(_-1).toSet
+            val (keep, leftOut) = lines.zipWithIndex.partition{ case (_,number) => rowSet.contains(number) }
+            println(s"left out ${leftOut.size} talks, kept ${keep.size}")
+            keep
+          case _ => uniques
+        } 
+
 
         // TODO adding trailing columns for special talks here instead of editing tsv
         // may need to configure
 
-        val schemaKeys = schemaRow.split("\t") :+ "Manual" :+ "Keynote"
+        val schemaKeys = schemaRow.split("\t") // :+ "Manual" :+ "Keynote"
         val schema = schemaKeys.zipWithIndex.toMap
 
-//        println("keys:" + schemaKeys.mkString("\n"))
+        println("keys:" + schemaKeys.mkString("\n"))
 
         def position(key: String): Int = schema(keys(key))
         def positionOpt(key: String): Option[Int] = keys.get(key).flatMap(k => schema.get(k))
@@ -315,7 +392,8 @@ object Talk {
 
           val titlePos   = position("title"); println("titlePos:" + titlePos)
           val bodyPos    = position("abstract"); println("bodyPos:" + bodyPos)
-          val lengthPos  = position("length"); println("lengthPos:" + lengthPos)
+          val acceptableLengthPos = position("acceptableLength"); println("acceptableLengthPos:" + acceptableLengthPos)
+          val preferredLengthPos  = position("preferredLength");  println("preferredLengthPos:"  + preferredLengthPos)
 
           //          val optTwitterPos = schema("Speaker's Twitter handle")
           //          val bioPos        = schema("Speaker Bio")
@@ -327,7 +405,7 @@ object Talk {
           val numberPosOpt  = positionOpt("number");
           val keynotePosOpt = positionOpt("keynote")
 
-          uniques flatMap { case (line, i) =>
+          talkLines flatMap { case (line, i) =>
 //            println(line); System.out.flush()
             try {
               val fields: List[String] = line.split("\t").toList.map(xml.Utility.escape)
@@ -362,7 +440,8 @@ object Talk {
               val (tags, tagsOther) = {
                 val (t, ta) = resolveTags(trackTags,  trackTagPrefix)(f(tracksPos))
 //                println(s"tracks: " + t)
-                val (l, la) = resolveTags(lengthTags, lengthTagPrefix)(f(lengthPos))
+                val (a, aa) = resolveTags(lengthTags, acceptableLengthTagPrefix)(f(acceptableLengthPos))
+                val (p, pa) = resolveTags(lengthTags, preferredLengthTagPrefix)(f(preferredLengthPos))
                 val (d, da) = resolveTags(dataTags,   dataTagPrefix)(f(dataPos))
                 val (c, ca) = resolveTags(codeTags,   codeTagPrefix)(f(codePos))
 
@@ -371,8 +450,8 @@ object Talk {
                   s"$companyTagPrefix$normC"
                 }
 
-                (t ++ l ++ d ++ c ++ companyTag.toList ++ keynoteOpt.toList,
-                  List(ta, la, da, ca).flatten)
+                (t ++ a ++ p ++ d ++ c ++ companyTag.toList ++ keynoteOpt.toList,
+                  List(ta, aa, pa, da, ca).flatten)
               }
 
               val number = foo(numberPosOpt).map{ x =>
@@ -390,7 +469,7 @@ object Talk {
               val title = f(titlePos)
               val body  = f(bodyPos)
 
-//              println("title: " + title)
+             println("title: " + title)
 
               val headline = Headline(number, speaker.name)
 
@@ -457,14 +536,21 @@ object ShowTalks {
 
   def main(args: Array[String]): Unit = {
     val inputFile = if (args.length>0) args(0) else "dbtb.tsv"
-
     println("showing talks from " + inputFile)
-    val talks = Talk.readFromTSV(inputFile)
+
+    val acceptedEnexFile = if (args.length>1) {
+      val enexFilename = args(1)
+      println("keeping only talks from Evernote notebook export file " + enexFilename)
+      Some(enexFilename) 
+    }else None
+
+    val talks = Talk.readFromTSV(inputFile, acceptedFileOpt = acceptedEnexFile)
 
     talks foreach { case t =>
-        val tags = t.tags.mkString(";")
-        val tagsOther = t.tagsOther.mkString(";")
-        println(s"tags: $tags ... other: $tagsOther")
+        // val tags = t.tags.mkString(";")
+        // val tagsOther = t.tagsOther.mkString(";")
+        // println(s"tags: $tags ... other: $tagsOther")
+        println(t.title)
     }
   }
 }
