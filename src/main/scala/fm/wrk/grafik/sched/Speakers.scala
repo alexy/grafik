@@ -12,17 +12,19 @@ object Speakers {
   def main(args: Array[String]): Unit = {
     import fm.wrk.excel.Implicits._
 
-    val dir = "/data/sbtb2019/"
+    val dir          = args(0)
 
-    val files = args.slice(0,3) map (dir+_)
-    val talksFile = files(0)
+    val files        = args.slice(1,5) map (dir+_)
 
-    val excelIn   = files(1)
+    val talksFile    = files(0) // NB this is args(1)!
+    val acceptedFile = files(1) 
+    val excelIn      = files(2)
     // TODO the first empty row can determine automatically
-    val excelOut  = files(2)
-    val rowBase   = args(3).toInt // 6 from scratch
+    val excelOut     = files(3)
 
-    val talks = Talk.readFromTSV(talksFile)//.filter(_.key.nonEmpty).sortBy(_.key)
+    val rowBase      = args(5).toInt // 6 from scratch
+
+    val talks    = Talk.readFromTSV(talksFile, acceptedFileOpt = Some(acceptedFile)) //.filter(_.key.nonEmpty).sortBy(_.key)
 
     val speakers = talks map (_.speaker) sortBy (_.name) distinct
 

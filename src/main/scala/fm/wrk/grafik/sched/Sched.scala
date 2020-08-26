@@ -49,9 +49,10 @@ class ExcelSched(excelIn: String, rowBase: Int)
     r.createCellA('a').setCellValue(st.key.toString)
     r.createCellA('b').setCellValue(st.talk.map(_.title).getOrElse("TBD"))
     r.createCellA('c').setCellValue("Y")
+    r.createCellA('d').setCellValue("N") // New in 2020
 
     startFinish.zipWithIndex foreach { case ((date,time), i) =>
-      val c = r.createCell(3 + i)
+      val c = r.createCell(4 + i)
       c.setCellValue(dateFormat.parse(s"$date $time"))
       c.setCellStyle(cellStyleDate1)
     }
@@ -63,10 +64,10 @@ class ExcelSched(excelIn: String, rowBase: Int)
       case "r" => "reactive"
       case "d" => "data"
     }
-    r.createCellA('f').setCellValue(label)
-    r.createCellA('i').setCellValue(st.talk.map(_.body).show)
-    r.createCellA('j').setCellValue(st.talk.map(_.speaker.name).show)
-    r.createCellA('o').setCellValue(label) // venue same as track for now
+    r.createCellA('g').setCellValue(label)
+    r.createCellA('j').setCellValue(st.talk.map(_.body).show)
+    r.createCellA('k').setCellValue(st.talk.map(_.speaker.name).show)
+    r.createCellA('p').setCellValue(label) // venue same as track for now
   }
 
   def write(excelOut: String): Unit = {
@@ -80,7 +81,8 @@ class ExcelSched(excelIn: String, rowBase: Int)
 
 object Sched {
 
-  case class Params(talksFile:  String,
+  case class Params(dir:        String,
+                    talksFile:  String,
                     fromDay:    LocalDate,
                     toDay:      LocalDate,
                     excelIn:    String,
@@ -90,20 +92,21 @@ object Sched {
 
   }
   object Params {
-    val dir = "/data/sbtb2018/"
+    
 
-    def apply(args: Array[String]): Params = {
-      val letters = args(5).toCharArray
-      val cardFiles = args.drop(6)
+    def apply(dir: String, args: Array[String]): Params = {
+      val letters = args(6).toCharArray
+      val cardFiles = args.drop(7)
       assert(letters.size == cardFiles.size, s"number of letters (${letters.size}) in ${letters.mkString(",")} "+
       s"must correspond to the number of card files (${cardFiles.size}): ${cardFiles.mkString(",")}")
 
       new Params(
-        talksFile  = dir + args(0),
-        fromDay    = new LocalDate(args(1)), // 2017-11-16
-        toDay      = new LocalDate(args(2)),
-        excelIn    = dir + args(3),
-        excelOut   = dir + args(4),
+        dir        = dir,
+        talksFile  = dir + args(1),
+        fromDay    = new LocalDate(args(2)), // 2017-11-16
+        toDay      = new LocalDate(args(3)),
+        excelIn    = dir + args(4),
+        excelOut   = dir + args(5),
         dayLetters = letters,
         cardFiles  = cardFiles // map (name=>s"$dir$name.indexcard")
       )
@@ -113,11 +116,13 @@ object Sched {
   def main(args: Array[String]): Unit = {
     import fm.wrk.grafik.cards.IndexCardProject.{pathName=>cardPathName}
 
-    val par = Params(args)
+    val dir = args(0)
+
+    val par = Params(dir, args)
 
     println(s"reading talks from ${par.talksFile}, sessions from ${par.excelIn}, writing ${par.excelOut}, day letters: ${par.dayLetters.mkString(";")}, days: " + par.cardFiles.mkString(", "))
 
-    val rowBase = 9 // for 0-based row increments
+    val rowBase = 8 // for 0-based row increments
     val excelSched = new ExcelSched(par.excelIn, rowBase)
 
     val dates = (0 to new Period(par.fromDay, par.toDay).getDays) map (par.fromDay.plusDays(_))

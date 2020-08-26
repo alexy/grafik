@@ -570,14 +570,17 @@ object CreateOneProject {
     val talkFileName = args(0)
     val cardFileName = args(1)
     val letter       = args(2)(0)
-//    val idBase       = args(3).toInt
-    val idPresent = args.length > 3
+// val idBase    = args(3).toInt    // convert to named option if ever needed
+// val idPresent = args.length > 3  // convert to named option if ever needed
+    val acceptedFileOpt = if (args.length > 3) Some(args(3)) else None
 
-    println(s"creating a project $cardFileName from $talkFileName, letter $letter")
+    println(s"creating a project $cardFileName from $talkFileName, letter $letter" + acceptedFileOpt.map{ fileName => s", using accepted file $fileName" })
 
-    val talks = Talk.readFromTSV(talkFileName, idPresent=idPresent)
+    val talks = Talk.readFromTSV(talkFileName, acceptedFileOpt=acceptedFileOpt)
 
-    val cards = talks.zipWithIndex map { case (talk, i) => IndexCard(talk.summary, i) }
+    // val cards = talks.zipWithIndex map { case (talk, i) => IndexCard(talk.summary, i) }
+    val cards = talks map { talk => IndexCard(talk.summary, talk.id) }
+
     val cardProject = IndexCardProject(cardFileName, letter, cards, Nil, talkFileName,
       DateTime.now.toLocalDate)
     cardProject.write()
