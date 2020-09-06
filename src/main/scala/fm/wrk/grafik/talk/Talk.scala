@@ -240,10 +240,41 @@ object Talk {
   // How did you learn about Scale By the Bay? 
   // Would your company be a partner of Scale By the Bay? 
   // Diversity and Community Support 
-  // Notes for the organizers            
+  // Notes for the organizers       
+
+  // RS 2020
+  // Timestamp 
+  // Email address 
+  // Name  
+  // Conference Day Phone number 
+  // URL of your high resolution photo 
+  // Twitter Handle  
+  // Your LinkedIn URL 
+  // Your Company  
+  // Bio 
+  // Co-presenter Email  
+  // Co-presenter Name 
+  // URL of co-presenters high resolution photo  
+  // Co-presenter Twitter Handle 
+  // Co-presenter LinkedIn URL 
+  // Co-presenter Company  
+  // Co-presenter Bio  
+  // Talk Title  
+  // Talk Abstract 
+  // Acceptable Talk Duration  
+  // Preferred Talk Duration 
+  // Notes for Organizers  
+  // Is your organization a member of the Reactive Foundation? 
+  // Would your company like to sponsor Reactive Summit? 
+  // Do you feel that your company would like to become a member of the Reactive Foundation? 
+  // Email address of company contact  
+  // What are the best topics for talks before and after your talk?  
+  // What do you expect to get out of the Reactive Summit?
+     
 
 
-  // Scale By the Bay 2019
+  // Scale By the Bay 2020
+  /* 
   val keys = Map(
     "timestamp" -> "Timestamp",
     "email"     -> "Email Address",
@@ -282,6 +313,40 @@ object Talk {
     "diversity" -> "Diversity and Community Support",
     "notes"     -> "Notes for the organizers"
   )
+  */
+ 
+ // RS 2020
+ val keys = Map(
+    "timestamp" -> "Timestamp",
+    "email"     -> "Email address",
+    "name"      -> "Name",
+    "submitter" -> "Acceptance Email address",
+    "phone"     -> "Conference Day Phone number",
+    "photo"     -> "URL of your high resolution photo",
+    "twitter"   -> "Twitter Handle",
+    "linkedin"  -> "Your LinkedIn URL",
+    "company"   -> "Your Company",
+    "bio"       -> "Bio",
+    "coEmail"   -> "Co-presenter Email",
+    "coName"    -> "Co-presenter Name",
+    "coPhoto"   -> "URL of co-presenters high resolution photo",       // NB Add coPhoto in 2021!
+    "coTwitter" -> "Co-presenter Twitter Handle",
+    "coLinkedIn" -> "Co-presenter LinkedIn URL",
+    "coCompany"  -> "Co-presenter Company",
+    "coBio"     -> "Co-presenter Bio",                                  // NB Add coBio in 2021!
+    "title"     -> "Talk Title",
+    "abstract"  -> "Talk Abstract",
+    "acceptableLength"  -> "Acceptable Talk Duration",
+    "preferredLength"   -> "Preferred Talk Duration",
+    "notes"     -> "Notes for Organizers",
+    "rfMember"  -> "Is your organization a member of the Reactive Foundation?",
+    "partner"   -> "Would your company like to sponsor Reactive Summit?",
+    "rfInterest" -> "Do you feel that your company would like to become a member of the Reactive Foundation?",
+    "rfEmail"    -> "Email address of company contact",
+    "topics"    -> "What are the best topics for talks before and after your talk?",
+    "expect"    -> "What do you expect to get out of the Reactive Summit?"
+  )
+
 
   val trackTagPrefix = ""
   val trackTags = Map(
@@ -378,6 +443,10 @@ object Talk {
 
         def position(key: String): Int = schema(keys(key))
         def positionOpt(key: String): Option[Int] = keys.get(key).flatMap(k => schema.get(k))
+        def showPosOpt(posOpt: Option[Int], name: String) = posOpt match {
+          case Some(pos) => println("${name}Pos: $pos")
+          case _ => println("NO ${name.toUpper}")
+        }
 
         try {
           //          val keyPos   = position("key")
@@ -386,7 +455,7 @@ object Talk {
 
           //          val optCompanyPos = tryKeys(schema)(List("Company and role", "Current company and role")) // optional in key, value, field
           val companyPos = position("company"); println("companyPos:" + companyPos)
-          val rolePos    = position("role"); println("rolePos:" + rolePos)
+          val rolePosOpt = positionOpt("role"); showPosOpt(rolePosOpt, "role")
           val photoPos   = position("photo"); println("photoPos:" + photoPos)
 
           val twitterPos = position("twitter"); println("twitterPos:" + twitterPos)
@@ -396,14 +465,10 @@ object Talk {
           val acceptableLengthPos = position("acceptableLength"); println("acceptableLengthPos:" + acceptableLengthPos)
           val preferredLengthPos  = position("preferredLength");  println("preferredLengthPos:"  + preferredLengthPos)
 
-          //          val optTwitterPos = schema("Speaker's Twitter handle")
-          //          val bioPos        = schema("Speaker Bio")
-          //          val optPhotoPos   = schema("Speaker Photo")
-
-          val tracksPos  = position("tracks"); println("tracksPos:" + tracksPos)
-          val dataPos    = position("data"); println("dataPos:" + dataPos)
-          val codePos    = position("code"); println("codePos:" + codePos)
-          val numberPosOpt  = positionOpt("number");
+          val trackPosOpt   = positionOpt("tracks"); showPosOpt(trackPosOpt, "tracks")
+          val dataPosOpt    = positionOpt ("data");  showPosOpt(dataPosOpt, "data")
+          val codePosOpt    = positionOpt("code");   showPosOpt(codePosOpt, "code")
+          val numberPosOpt  = positionOpt("number")
           val keynotePosOpt = positionOpt("keynote")
 
           talkLines flatMap { case (line, i) =>
@@ -417,7 +482,7 @@ object Talk {
                 case _ => None
               }
 
-              //              val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
+              // val optCompany = for {pos <- optCompanyPos; s <- fo(pos)} yield s
               val companyOpt = fo(companyPos)
 
               val speaker =
@@ -425,7 +490,7 @@ object Talk {
                   name       = f(namePos),
                   email      = f(emailPos),
                   companyOpt = companyOpt,
-                  roleOpt    = fo(rolePos),
+                  roleOpt    = foo(rolePosOpt), // rolePosOpt.map(fo(_)),
                   photoOpt   = fo(photoPos),
                   twitterOpt = fo(twitterPos).map { s =>
                     s.toList match {
@@ -438,13 +503,22 @@ object Talk {
 
               val keynoteOpt = foo(keynotePosOpt)
 
+              def mayAddTags(tagPosOpt: Option[Int], tags: Map[String, String], prefix: String): (List[String], Option[String]) = {
+                tagPosOpt match {
+                  case Some(pos) => resolveTags(tags, prefix)(f(pos))
+                  case _ => (Nil, None)
+                }
+              }
+
+
               val (tags, tagsOther) = {
-                val (t, ta) = resolveTags(trackTags,  trackTagPrefix)(f(tracksPos))
-//                println(s"tracks: " + t)
+                val (t, ta) = mayAddTags(trackPosOpt, trackTags, trackTagPrefix)
+                val (d, da) = mayAddTags(dataPosOpt,  dataTags,  dataTagPrefix) 
+                val (c, ca) = mayAddTags(codePosOpt,  codeTags,  codeTagPrefix)
+
                 val (a, aa) = resolveTags(lengthTags, acceptableLengthTagPrefix)(f(acceptableLengthPos))
                 val (p, pa) = resolveTags(lengthTags, preferredLengthTagPrefix)(f(preferredLengthPos))
-                val (d, da) = resolveTags(dataTags,   dataTagPrefix)(f(dataPos))
-                val (c, ca) = resolveTags(codeTags,   codeTagPrefix)(f(codePos))
+
 
                 val companyTag = companyOpt.map {
                   case c => val normC = defangTag(c).toLowerCase

@@ -1,8 +1,8 @@
 
 Sample sequence of invocations from sbt
 
-Upload to Evernote
-runMain fm.wrk.grafik.note.Notes sbtb2020.tsv sbtb202
+Upload to Evernote, add "dry" anywhere on the command line to make it a dry run
+runMain dry fm.wrk.grafik.note.Notes sbtb2020.tsv sbtb2020
 
 Verify .enex merge
 runMain fm.wrk.grafik.talk.ShowTalks sbtb2020.tsv accepted.enex
